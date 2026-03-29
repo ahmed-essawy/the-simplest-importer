@@ -1,0 +1,936 @@
+/**
+ * The Simplest Importer — Admin Styles
+ *
+ * @package TheSimplestImporter
+ */
+
+/* ------------------------------------------------------------------
+ * Layout
+ * ------------------------------------------------------------------ */
+
+.tsi-wrap {
+	max-width: 860px;
+	margin-top: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Header
+ * ------------------------------------------------------------------ */
+
+.tsi-header {
+	margin-bottom: 24px;
+}
+
+.tsi-header h1 {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 23px;
+	font-weight: 400;
+	color: #1d2327;
+}
+
+.tsi-header h1 .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	color: #2271b1;
+}
+
+.tsi-subtitle {
+	margin: 4px 0 0;
+	color: #50575e;
+	font-size: 13px;
+}
+
+/* ------------------------------------------------------------------
+ * Card
+ * ------------------------------------------------------------------ */
+
+.tsi-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	margin-bottom: 16px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+	overflow: hidden;
+	transition: box-shadow 0.2s ease;
+}
+
+.tsi-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.tsi-card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	padding: 18px 24px;
+	background: #f9fafb;
+	border-bottom: 1px solid #e8e8e8;
+}
+
+.tsi-card-header h2 {
+	margin: 0 0 2px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+	line-height: 1.3;
+}
+
+.tsi-card-header p {
+	margin: 0;
+	font-size: 12.5px;
+	color: #646970;
+}
+
+.tsi-card-body {
+	padding: 20px 24px;
+}
+
+/* ------------------------------------------------------------------
+ * Step Number Badge
+ * ------------------------------------------------------------------ */
+
+.tsi-step-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	min-width: 34px;
+	border-radius: 50%;
+	background: #2271b1;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	margin-top: 2px;
+}
+
+.tsi-step-num--active {
+	background: transparent;
+	width: auto;
+	height: auto;
+	min-width: auto;
+}
+
+.tsi-step-num--active .spinner {
+	margin: 0;
+}
+
+.tsi-step-num--done {
+	background: #00a32a;
+}
+
+.tsi-step-num--done .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Select Dropdown
+ * ------------------------------------------------------------------ */
+
+.tsi-select {
+	min-width: 320px;
+	max-width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+	line-height: 1.5;
+}
+
+.tsi-select:focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: none;
+}
+
+/* ------------------------------------------------------------------
+ * Action Cards
+ * ------------------------------------------------------------------ */
+
+.tsi-action-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+}
+
+.tsi-action-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 28px 16px;
+	border: 2px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-align: center;
+}
+
+.tsi-action-card:hover {
+	border-color: #2271b1;
+	box-shadow: 0 4px 12px rgba(34, 113, 177, 0.15);
+	transform: translateY(-2px);
+}
+
+.tsi-action-card:focus {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+.tsi-action-card .dashicons {
+	font-size: 32px;
+	width: 32px;
+	height: 32px;
+	color: #2271b1;
+}
+
+.tsi-action-card strong {
+	font-size: 15px;
+	color: #1d2327;
+}
+
+.tsi-action-desc {
+	font-size: 12px;
+	color: #646970;
+	line-height: 1.4;
+}
+
+/* ------------------------------------------------------------------
+ * Source Tabs
+ * ------------------------------------------------------------------ */
+
+.tsi-source-tabs {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.tsi-source-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 18px;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	background: #f0f0f1;
+	color: #50575e;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.tsi-source-tab .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.tsi-source-tab:hover {
+	background: #e8e8e8;
+}
+
+.tsi-source-tab--active {
+	background: #fff;
+	border-color: #2271b1;
+	color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* ------------------------------------------------------------------
+ * Dropzone
+ * ------------------------------------------------------------------ */
+
+.tsi-dropzone {
+	border: 2px dashed #c3c4c7;
+	border-radius: 8px;
+	padding: 8px;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.tsi-dropzone:hover,
+.tsi-dropzone.tsi-drag-over {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.tsi-dropzone.tsi-drag-over {
+	border-style: solid;
+	box-shadow: inset 0 0 0 2px rgba(34, 113, 177, 0.15);
+}
+
+.tsi-dropzone-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 32px 16px;
+	text-align: center;
+}
+
+.tsi-dropzone-inner > .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: #c3c4c7;
+	margin-bottom: 12px;
+	transition: color 0.2s;
+}
+
+.tsi-dropzone:hover .dashicons,
+.tsi-dropzone.tsi-drag-over .dashicons {
+	color: #2271b1;
+}
+
+.tsi-dropzone-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0 0 4px;
+}
+
+.tsi-dropzone-or {
+	font-size: 12px;
+	color: #999;
+	margin: 4px 0 10px;
+}
+
+.tsi-dropzone .description {
+	margin-top: 14px;
+	font-size: 12px;
+	color: #888;
+}
+
+#tsi-csv-file {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+}
+
+/* ------------------------------------------------------------------
+ * URL Row
+ * ------------------------------------------------------------------ */
+
+.tsi-url-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+#tsi-csv-url {
+	flex: 1;
+	min-width: 0;
+	max-width: 440px;
+}
+
+/* ------------------------------------------------------------------
+ * File Info Badge
+ * ------------------------------------------------------------------ */
+
+.tsi-file-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+	padding: 12px 16px;
+	background: #edfaef;
+	border: 1px solid #b8e6be;
+	border-radius: 6px;
+	color: #00450c;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.tsi-file-info .dashicons {
+	color: #00a32a;
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Data Preview Table
+ * ------------------------------------------------------------------ */
+
+#tsi-preview {
+	margin-top: 16px;
+}
+
+#tsi-preview h3 {
+	font-size: 13px;
+	font-weight: 600;
+	margin: 0 0 8px;
+	color: #1d2327;
+}
+
+.tsi-preview-meta {
+	font-weight: 400;
+	color: #888;
+	font-size: 12px;
+}
+
+.tsi-preview-scroll {
+	overflow-x: auto;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+}
+
+.tsi-preview-table {
+	border: none !important;
+	border-collapse: collapse;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.tsi-preview-table th {
+	background: #f6f7f7;
+	font-weight: 600;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: #50575e;
+	padding: 8px 12px;
+	border-bottom: 2px solid #ddd;
+}
+
+.tsi-preview-table td {
+	padding: 6px 12px;
+	color: #1d2327;
+	border-bottom: 1px solid #f0f0f1;
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tsi-preview-table tr:last-child td {
+	border-bottom: none;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Toolbar
+ * ------------------------------------------------------------------ */
+
+.tsi-mapping-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.tsi-mapping-count {
+	margin-left: auto;
+	font-size: 12px;
+	color: #646970;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Table
+ * ------------------------------------------------------------------ */
+
+.tsi-table-wrap {
+	overflow-x: auto;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+}
+
+.tsi-mapping-table {
+	border: none !important;
+	border-collapse: collapse;
+	margin: 0;
+}
+
+.tsi-mapping-table thead th {
+	background: #f6f7f7;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: #50575e;
+	padding: 10px 14px;
+	border-bottom: 2px solid #ddd;
+}
+
+.tsi-mapping-table tbody td {
+	padding: 10px 14px;
+	vertical-align: middle;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.tsi-mapping-table tbody tr:hover {
+	background: #f9fafb;
+}
+
+.tsi-mapping-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.tsi-col-check {
+	width: 44px;
+	text-align: center;
+}
+
+.tsi-col-field {
+	white-space: nowrap;
+}
+
+.tsi-col-field code {
+	font-size: 11px;
+	color: #888;
+}
+
+.tsi-col-select {
+	width: 100%;
+	max-width: 260px;
+	padding: 5px 8px;
+	font-size: 13px;
+}
+
+.tsi-custom-value {
+	display: none;
+	margin-top: 6px !important;
+	max-width: 260px;
+}
+
+.tsi-extra-row {
+	background: #f0f6fc !important;
+}
+
+.tsi-extra-key {
+	max-width: 180px;
+	font-family: monospace;
+	font-size: 13px;
+}
+
+.tsi-remove-extra {
+	color: #d63638 !important;
+	margin-left: 8px !important;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Footer
+ * ------------------------------------------------------------------ */
+
+.tsi-mapping-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 16px;
+	gap: 12px;
+}
+
+.tsi-mapping-actions #tsi-add-extra .dashicons {
+	vertical-align: middle;
+	margin-top: -2px;
+}
+
+.tsi-btn-run {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 6px;
+}
+
+.tsi-btn-run .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.tsi-import-buttons {
+	display: flex;
+	gap: 8px;
+}
+
+/* ------------------------------------------------------------------
+ * Progress
+ * ------------------------------------------------------------------ */
+
+.tsi-progress {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.tsi-progress-bar {
+	flex: 1;
+	height: 22px;
+	background: #e0e0e0;
+	border-radius: 11px;
+	overflow: hidden;
+	position: relative;
+}
+
+.tsi-progress-fill {
+	height: 100%;
+	width: 0;
+	border-radius: 11px;
+	background: linear-gradient(135deg, #2271b1 25%, #1a5e99 25%, #1a5e99 50%, #2271b1 50%, #2271b1 75%, #1a5e99 75%);
+	background-size: 20px 20px;
+	animation: tsi-stripes 0.6s linear infinite;
+	transition: width 0.35s ease;
+}
+
+@keyframes tsi-stripes {
+	0% { background-position: 20px 0; }
+	100% { background-position: 0 0; }
+}
+
+.tsi-progress-pct {
+	font-size: 14px;
+	font-weight: 700;
+	color: #2271b1;
+	min-width: 40px;
+	text-align: right;
+}
+
+/* ------------------------------------------------------------------
+ * Live Log (during import)
+ * ------------------------------------------------------------------ */
+
+.tsi-live-log {
+	max-height: 200px;
+	overflow-y: auto;
+	font-family: monospace;
+	font-size: 11.5px;
+	line-height: 1.7;
+	padding: 10px 14px;
+	background: #f6f7f7;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	color: #50575e;
+}
+
+/* ------------------------------------------------------------------
+ * Result Summary Badges
+ * ------------------------------------------------------------------ */
+
+.tsi-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.tsi-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #fff;
+}
+
+.tsi-badge-inserted { background: #00a32a; }
+.tsi-badge-updated  { background: #2271b1; }
+.tsi-badge-skipped  { background: #dba617; color: #1d2327; }
+.tsi-badge-errors   { background: #d63638; }
+
+.tsi-badge .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+/* ------------------------------------------------------------------
+ * Result Log
+ * ------------------------------------------------------------------ */
+
+.tsi-log {
+	max-height: 360px;
+	overflow-y: auto;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+	padding: 12px 16px;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.8;
+	background: #f9fafb;
+}
+
+.tsi-log-ok    { color: #00760d; }
+.tsi-log-skip  { color: #996800; }
+.tsi-log-error { color: #d63638; font-weight: 600; }
+
+/* ------------------------------------------------------------------
+ * Result Actions
+ * ------------------------------------------------------------------ */
+
+.tsi-results-actions {
+	margin-top: 16px;
+	display: flex;
+	gap: 8px;
+}
+
+.tsi-results-actions .dashicons {
+	vertical-align: middle;
+	margin-top: -2px;
+}
+
+/* ------------------------------------------------------------------
+ * Overlay (Export & Template)
+ * ------------------------------------------------------------------ */
+
+.tsi-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.tsi-overlay-inner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: #fff;
+	padding: 24px 36px;
+	border-radius: 8px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+	font-size: 15px;
+	font-weight: 500;
+	color: #1d2327;
+}
+
+.tsi-overlay-inner .spinner {
+	float: none;
+	margin: 0;
+}
+
+/* ------------------------------------------------------------------
+ * Responsive — Tablet
+ * ------------------------------------------------------------------ */
+
+@media screen and (max-width: 782px) {
+	.tsi-wrap {
+		margin-top: 10px;
+	}
+
+	.tsi-card-header {
+		padding: 14px 16px;
+	}
+
+	.tsi-card-body {
+		padding: 16px;
+	}
+
+	.tsi-action-grid {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+
+	.tsi-action-card {
+		flex-direction: row;
+		padding: 16px;
+		gap: 12px;
+		text-align: left;
+	}
+
+	.tsi-action-card .dashicons {
+		font-size: 24px;
+		width: 24px;
+		height: 24px;
+	}
+
+	.tsi-select {
+		min-width: 0;
+		width: 100%;
+	}
+
+	.tsi-col-select {
+		max-width: 100%;
+	}
+
+	.tsi-mapping-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.tsi-btn-run {
+		justify-content: center;
+	}
+
+	.tsi-source-tabs {
+		flex-direction: column;
+	}
+
+	.tsi-dropzone-inner {
+		padding: 24px 12px;
+	}
+
+	.tsi-url-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	#tsi-csv-url {
+		max-width: 100%;
+	}
+
+	.tsi-export-options {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ------------------------------------------------------------------
+ * Responsive — Small mobile
+ * ------------------------------------------------------------------ */
+
+@media screen and (max-width: 480px) {
+	.tsi-header h1 {
+		font-size: 18px;
+	}
+
+	.tsi-step-num {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		font-size: 12px;
+	}
+
+	.tsi-card-header h2 {
+		font-size: 14px;
+	}
+
+	.tsi-badge {
+		padding: 8px 14px;
+		font-size: 12px;
+	}
+
+	.tsi-summary {
+		gap: 6px;
+	}
+
+	.tsi-dropzone-inner > .dashicons {
+		font-size: 36px;
+		width: 36px;
+		height: 36px;
+	}
+}
+
+/* ------------------------------------------------------------------
+ * Column Mapping Inner (select + reset button)
+ * ------------------------------------------------------------------ */
+
+.tsi-col-map-inner {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.tsi-col-map-inner .tsi-col-select {
+	flex: 1;
+}
+
+.tsi-reset-field {
+	padding: 2px 6px !important;
+	min-height: 0 !important;
+	line-height: 1 !important;
+}
+
+.tsi-reset-field .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: middle;
+}
+
+#tsi-reset-all .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+}
+
+/* ------------------------------------------------------------------
+ * Export Options
+ * ------------------------------------------------------------------ */
+
+.tsi-export-options {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+
+.tsi-export-option-wrap {
+	padding: 14px 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f9fafb;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tsi-export-option-wrap:has(input[type="radio"]:checked) {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.tsi-export-option {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 0;
+	cursor: pointer;
+}
+
+.tsi-export-option input[type="radio"] {
+	margin: 0;
+}
+
+.tsi-export-option .description {
+	width: 100%;
+	padding-left: 26px;
+	margin-top: -4px;
+}
+
+.tsi-export-range-fields,
+.tsi-export-date-fields {
+	display: flex;
+	gap: 16px;
+	padding: 8px 0 8px 26px;
+}
+
+.tsi-export-range-fields label,
+.tsi-export-date-fields label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.tsi-export-actions {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #e0e0e0;
+}
+
+.tsi-export-actions .button .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: text-bottom;
+	margin-right: 2px;
+}

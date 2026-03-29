@@ -1,0 +1,46 @@
+name: Build Release ZIP
+
+on:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: write
+
+env:
+  PLUGIN_SLUG: the-simplest-importer
+
+jobs:
+  build:
+    name: Build & Attach ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build plugin ZIP
+        run: |
+          mkdir -p build/"$PLUGIN_SLUG"
+          rsync -av --exclude-from=- "$PLUGIN_SLUG"/ build/"$PLUGIN_SLUG"/ <<'EOF'
+          .git
+          .github
+          .gitignore
+          node_modules
+          vendor
+          tests
+          *.md
+          composer.json
+          composer.lock
+          package.json
+          package-lock.json
+          phpcs.xml
+          .editorconfig
+          .phpcs.xml.dist
+          EOF
+          cd build
+          zip -r "../${PLUGIN_SLUG}.zip" "$PLUGIN_SLUG"
+
+      - name: Upload ZIP to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.PLUGIN_SLUG }}.zip

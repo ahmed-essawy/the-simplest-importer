@@ -1,0 +1,118 @@
+name: Plugin Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_DIR: the-simplest-importer
+
+jobs:
+  php-compatibility:
+    name: PHP Syntax & Compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: php-parallel-lint/php-parallel-lint
+
+      - name: Check PHP syntax
+        run: parallel-lint $PLUGIN_DIR
+
+  coding-standards:
+    name: WordPress Coding Standards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: cs2pr, phpcs
+
+      - name: Install WPCS
+        run: |
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --dev wp-coding-standards/wpcs:"^3.0" dealerdirect/phpcodesniffer-composer-installer:"^1.0"
+
+      - name: Run PHPCS
+        run: |
+          phpcs --standard=WordPress --extensions=php \
+            --ignore=vendor,node_modules \
+            --exclude=WordPress.Files.FileName \
+            --report=checkstyle \
+            "$PLUGIN_DIR" | cs2pr
+
+  js-css-lint:
+    name: JS & CSS Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate JS syntax
+        run: node --check "$PLUGIN_DIR/assets/app.js"
+
+      - name: Check for console.log / debugger
+        run: |
+          if grep -rn 'console\.\(log\|debug\|warn\|error\)\|debugger' "$PLUGIN_DIR/assets/app.js"; then
+            echo "::warning::Found debug statements in JS"
+            exit 1
+          fi
+          echo "No debug statements found."
+
+  security-scan:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for dangerous functions
+        run: |
+          DANGEROUS='eval\(|exec\(|system\(|passthru\(|shell_exec|proc_open|popen\(|assert\('
+          if grep -rn --include='*.php' -E "$DANGEROUS" "$PLUGIN_DIR"; then
+            echo "::error::Dangerous PHP functions found!"
+            exit 1
+          fi
+          echo "No dangerous functions found."
+
+      - name: Check for debug output
+        run: |
+          DEBUG='var_dump\(|print_r\(|error_log\(|debug_print_backtrace'
+          if grep -rn --include='*.php' -E "$DEBUG" "$PLUGIN_DIR"; then
+            echo "::error::Debug output found in PHP!"
+            exit 1
+          fi
+          echo "No debug output found."
+
+      - name: Check for direct file access guards
+        run: |
+          FAIL=0
+          for f in $(find "$PLUGIN_DIR" -name '*.php'); do
+            if ! grep -q 'ABSPATH\|WP_UNINSTALL_PLUGIN\|Silence is golden' "$f"; then
+              echo "::error file=$f::Missing ABSPATH guard"
+              FAIL=1
+            fi
+          done
+          exit $FAIL

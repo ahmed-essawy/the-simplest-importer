@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Log files
+*.log
+debug.log
+
+# Environment
+.env
+.env.*
+
+# Composer
+composer.lock
+
+# npm / yarn
+package-lock.json
+yarn.lock
+
+# PHPUnit
+phpunit.xml
+.phpunit.result.cache
+
+# PHPCS
+phpcs.xml

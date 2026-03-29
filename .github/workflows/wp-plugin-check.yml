@@ -1,0 +1,28 @@
+name: WordPress Plugin Check
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'the-simplest-importer/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'the-simplest-importer/**'
+
+permissions:
+  contents: read
+
+jobs:
+  plugin-check:
+    name: Official WP Plugin Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: the-simplest-importer
+          exclude-directories: 'node_modules,vendor,.git,.github'

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<ruleset name="The Simplest Importer">
+	<description>PHPCS ruleset for The Simplest Importer plugin.</description>
+
+	<!-- Scan plugin directory -->
+	<file>./the-simplest-importer</file>
+
+	<!-- Exclude non-PHP assets -->
+	<exclude-pattern>*/assets/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<!-- WordPress Coding Standards -->
+	<rule ref="WordPress">
+		<!-- Allow short array syntax -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+
+	<!-- Check PHP 7.4+ compatibility -->
+	<rule ref="PHPCompatibilityWP"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<!-- Plugin text domain -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="the-simplest-importer"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Prefix check -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="tsi"/>
+				<element value="the_simplest_importer"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Show colors and progress -->
+	<arg name="colors"/>
+	<arg value="sp"/>
+	<arg name="extensions" value="php"/>
+</ruleset>
