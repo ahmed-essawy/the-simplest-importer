@@ -17,6 +17,10 @@
 	var csvRowCount     = 0;
 	var extraFieldCount = 0;
 	var postTypeData    = {};
+	var lastHistoryId   = '';
+	var lastAllLogs     = [];
+	var fileQueue       = [];
+	var csvDelimiter    = ',';
 
 	/* ================================================================
 	 * Step 1 — Load post types
@@ -39,20 +43,33 @@
 				'</option>'
 			);
 		});
+
+		/* Restore sticky post type from localStorage (#14) */
+		var saved = localStorage.getItem('tsi_last_post_type');
+		if (saved && postTypeData[saved]) {
+			$sel.val(saved).trigger('change');
+		}
 	});
 
 	$('#tsi-post-type').on('change', function () {
 		var slug = $(this).val();
 		if (slug) {
+			/* Save sticky selection (#14) */
+			localStorage.setItem('tsi_last_post_type', slug);
+
 			var pt = postTypeData[slug];
 			if (pt && pt.count === 0) {
 				$('#tsi-btn-export').hide();
 			} else {
 				$('#tsi-btn-export').show();
+				/* Show row count in export button (#15) */
+				if (pt && pt.count) {
+					$('#tsi-btn-export').find('.tsi-action-desc').text('Export ' + pt.count + ' rows to CSV');
+				}
 			}
 			$('#tsi-step-actions').slideDown(200);
 		} else {
-			$('#tsi-btn-export').show();
+			$('#tsi-btn-export').show().find('.tsi-action-desc').text('Export to CSV');
 			$('#tsi-step-actions').slideUp(200);
 		}
 		resetFrom('tsi-step-source');
@@ -88,6 +105,28 @@
 		/* Set row range min/max from post count */
 		$('#tsi-export-row-from').val(1).attr({ min: 1, max: count || '' });
 		$('#tsi-export-row-to').val(count || '').attr({ min: 1, max: count || '' });
+
+		/* Populate selective columns checklist (#9) */
+		var ptSlug = $('#tsi-post-type').val();
+		if (ptSlug) {
+			$.post(tsiImporter.ajax_url, {
+				action:    'tsi_get_fields',
+				nonce:     tsiImporter.nonce,
+				post_type: ptSlug
+			}, function (res) {
+				if (!res.success) {
+					return;
+				}
+				var html = '';
+				$.each(res.data, function (key, label) {
+					html += '<label class="tsi-export-field-label">' +
+						'<input type="checkbox" class="tsi-export-field" value="' + esc(key) + '" checked> ' +
+						esc(label) +
+						'</label> ';
+				});
+				$('#tsi-export-fields').html(html);
+			});
+		}
 
 		$('#tsi-step-export').slideDown(200);
 		scrollTo('#tsi-step-export');
@@ -199,6 +238,23 @@
 		}
 
 		showOverlay('Exporting\u2026');
+
+		/* Collect advanced export options (#5, #9) */
+		var statuses = [];
+		$('.tsi-export-status:checked').each(function () {
+			statuses.push($(this).val());
+		});
+		if (statuses.length) {
+			params['export_statuses[]'] = statuses;
+		}
+		var fields = [];
+		$('.tsi-export-field:checked').each(function () {
+			fields.push($(this).val());
+		});
+		if (fields.length) {
+			params['export_fields[]'] = fields;
+		}
+
 		$.post(tsiImporter.ajax_url, params, function (res) {
 			hideOverlay();
 			if (!res.success) {
@@ -232,6 +288,22 @@
 		});
 	});
 
+	/* History button (#2) */
+	$('#tsi-btn-history').on('click', function () {
+		resetFrom('tsi-step-source');
+		loadHistory();
+		$('#tsi-step-history').slideDown(200);
+		scrollTo('#tsi-step-history');
+	});
+
+	/* Schedule button (#1) */
+	$('#tsi-btn-schedule').on('click', function () {
+		resetFrom('tsi-step-source');
+		loadSchedules();
+		$('#tsi-step-schedule').slideDown(200);
+		scrollTo('#tsi-step-schedule');
+	});
+
 	/* ================================================================
 	 * Step 3 — Source tabs
 	 * ================================================================ */
@@ -259,9 +331,28 @@
 	}).on('drop', function (e) {
 		var dt    = e.originalEvent.dataTransfer;
 		var files = dt ? dt.files : null;
-		if (files && files.length) {
-			uploadFile(files[0]);
+		if (!files || !files.length) {
+			return;
 		}
+		/* Multi-file queue (#8) */
+		if (files.length > 1) {
+			fileQueue = [];
+			var i;
+			for (i = 0; i < files.length; i++) {
+				if (files[i].name.toLowerCase().match(/\.csv$/)) {
+					fileQueue.push(files[i]);
+				}
+			}
+			if (fileQueue.length > 1) {
+				$('#tsi-file-queue').html(
+					'<strong>' + fileQueue.length + ' CSV files queued.</strong> ' +
+					'Processing first file. Remaining files will be processed after each import completes.'
+				).show();
+				uploadFile(fileQueue.shift());
+				return;
+			}
+		}
+		uploadFile(files[0]);
 	}).on('click', function (e) {
 		if ($(e.target).closest('#tsi-browse-btn').length) {
 			return;
@@ -350,12 +441,15 @@
 		csvHeaders  = data.headers;
 		csvToken    = data.token;
 		csvRowCount = data.row_count;
+		csvDelimiter = data.delimiter || ',';
 
-		/* File info badge */
+		/* File info badge — include delimiter (#11) */
+		var delimLabel = csvDelimiter === '\t' ? 'tab' : csvDelimiter;
 		$('#tsi-file-info').html(
 			'<span class="dashicons dashicons-yes-alt"></span> ' +
 			'<strong>' + esc(filename) + '</strong> &mdash; ' +
-			data.row_count + ' data rows, ' + csvHeaders.length + ' columns'
+			data.row_count + ' data rows, ' + csvHeaders.length + ' columns' +
+			' <span class="tsi-delimiter-badge">delimiter: <code>' + esc(delimLabel) + '</code></span>'
 		).show();
 
 		/* Data preview table */
@@ -454,6 +548,19 @@
 		var removeBtn = isExtra ? ' <button type="button" class="button button-small tsi-remove-extra" title="Remove">&times;</button>' : '';
 		var resetBtn  = !isExtra ? ' <button type="button" class="button button-small tsi-reset-field" title="Reset to original mapping"><span class="dashicons dashicons-image-rotate"></span></button>' : '';
 
+		/* Transform dropdown (#4) */
+		var transformOpts = '<select class="tsi-transform-select">' +
+			'<option value="">— none —</option>' +
+			'<option value="uppercase">UPPERCASE</option>' +
+			'<option value="lowercase">lowercase</option>' +
+			'<option value="titlecase">Title Case</option>' +
+			'<option value="trim">Trim whitespace</option>' +
+			'<option value="strip_tags">Strip HTML tags</option>' +
+			'<option value="slug">Slug (sanitize_title)</option>' +
+			'<option value="date_ymd">Date → YYYY-MM-DD</option>' +
+			'<option value="date_dmy">Date → DD/MM/YYYY</option>' +
+			'</select>';
+
 		return $(
 			'<tr data-field="' + esc(fieldKey) + '" data-original-match="' + matchIdx + '"' + (isExtra ? ' class="tsi-extra-row"' : '') + '>' +
 			'<td class="tsi-col-check"><input type="checkbox" class="tsi-field-check"' + checked + '></td>' +
@@ -466,6 +573,7 @@
 				'</div>' +
 				'<input type="text" class="tsi-custom-value regular-text" placeholder="Enter static value\u2026">' +
 			'</td>' +
+			'<td>' + transformOpts + '</td>' +
 			'</tr>'
 		);
 	}
@@ -596,6 +704,16 @@
 		var btnId      = $(this).attr('id');
 		var importMode = btnId === 'tsi-btn-update' ? 'update' : (btnId === 'tsi-btn-insert-update' ? 'insert-update' : 'insert');
 		var mapping    = buildMappingPayload();
+		var transforms = buildTransformPayload();
+		var isDryRun   = $('#tsi-dry-run').is(':checked');
+
+		/* Duplicate detection (#3) */
+		var dupField = '';
+		var dupMeta  = '';
+		if ($('#tsi-dup-check').is(':checked')) {
+			dupField = $('#tsi-dup-field').val();
+			dupMeta  = $('#tsi-dup-meta-key').val();
+		}
 
 		/* For insert mode, strip the ID mapping so all rows create new posts */
 		if (importMode === 'insert' && mapping.hasOwnProperty('ID')) {
@@ -617,7 +735,9 @@
 		}
 
 		var confirmMsg;
-		if (importMode === 'update') {
+		if (isDryRun) {
+			confirmMsg = 'Run a dry run (no changes will be made)?';
+		} else if (importMode === 'update') {
 			confirmMsg = 'This will update existing posts based on the ID column. Continue?';
 		} else if (importMode === 'insert-update') {
 			confirmMsg = 'This will insert rows with no ID or non-existing IDs, and update rows with existing IDs. Continue?';
@@ -633,10 +753,16 @@
 		$('#tsi-step-progress').slideDown(200);
 		scrollTo('#tsi-step-progress');
 
+		if (isDryRun) {
+			$('#tsi-progress-title').text('Dry Run\u2026');
+		}
+
 		var totals = { inserted: 0, updated: 0, skipped: 0, errors: 0 };
 		var allLogs = [];
+		lastHistoryId = '';
+		lastAllLogs   = [];
 
-		processBatch(0, mapping, totals, allLogs);
+		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms);
 	});
 
 	/**
@@ -685,17 +811,48 @@
 	}
 
 	/**
+	 * Build the transforms payload from the table (#4).
+	 */
+	function buildTransformPayload() {
+		var transforms = {};
+		$('#tsi-mapping-table tbody tr').each(function () {
+			var $cb  = $(this).find('.tsi-field-check');
+			if (!$cb.is(':checked')) {
+				return;
+			}
+			var field = $(this).data('field');
+			if ($(this).hasClass('tsi-extra-row')) {
+				var raw = $(this).find('.tsi-extra-key').val().trim();
+				if (raw) {
+					field = 'meta__' + raw;
+				}
+			}
+			var transform = $(this).find('.tsi-transform-select').val();
+			if (transform) {
+				transforms[field] = transform;
+			}
+		});
+		return transforms;
+	}
+
+	/**
 	 * Process one batch, then recurse until done.
 	 */
-	function processBatch(offset, mapping, totals, allLogs) {
+	function processBatch(offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms) {
 		$.post(tsiImporter.ajax_url, {
-			action:     'tsi_import_batch',
-			nonce:      tsiImporter.nonce,
-			token:      csvToken,
-			post_type:  $('#tsi-post-type').val(),
-			mapping:    JSON.stringify(mapping),
-			offset:     offset,
-			batch_size: tsiImporter.batch_size
+			action:       'tsi_import_batch',
+			nonce:        tsiImporter.nonce,
+			token:        csvToken,
+			post_type:    $('#tsi-post-type').val(),
+			mapping:      JSON.stringify(mapping),
+			offset:       offset,
+			batch_size:   tsiImporter.batch_size,
+			import_mode:  importMode,
+			dry_run:      isDryRun ? '1' : '',
+			dup_field:    dupField,
+			dup_meta_key: dupMeta,
+			transforms:   JSON.stringify(transforms),
+			history_id:   lastHistoryId
 		}, function (res) {
 			if (!res.success) {
 				$('#tsi-progress-detail').text(res.data || 'Import failed.');
@@ -719,6 +876,11 @@
 			totals.errors   += d.errors;
 			allLogs = allLogs.concat(d.log);
 
+			/* Capture history ID for rollback */
+			if (d.history_id) {
+				lastHistoryId = d.history_id;
+			}
+
 			/* Append to live log */
 			var $liveLog = $('#tsi-live-log');
 			$.each(d.log, function (idx, line) {
@@ -727,15 +889,18 @@
 					cls = 'tsi-log-error';
 				} else if (line.indexOf('Skipped') !== -1) {
 					cls = 'tsi-log-skip';
+				} else if (line.indexOf('DRY RUN') !== -1) {
+					cls = 'tsi-log-dry';
 				}
 				$liveLog.append('<div class="' + cls + '">' + esc(line) + '</div>');
 			});
 			$liveLog.scrollTop($liveLog[0].scrollHeight);
 
 			if (!d.done) {
-				processBatch(d.offset, mapping, totals, allLogs);
+				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms);
 			} else {
-				showResults(totals, allLogs);
+				lastAllLogs = allLogs;
+				showResults(totals, allLogs, isDryRun);
 			}
 
 		}).fail(function () {
@@ -747,20 +912,23 @@
 	 * Step 6 — Results
 	 * ================================================================ */
 
-	function showResults(totals, allLogs) {
+	function showResults(totals, allLogs, isDryRun) {
 		/* Complete progress */
 		$('#tsi-progress-fill').css('width', '100%');
 		$('#tsi-progress-pct').text('100%');
-		$('#tsi-progress-title').text('Complete');
-		$('#tsi-progress-detail').text('Import finished successfully.');
+		$('#tsi-progress-title').text(isDryRun ? 'Dry Run Complete' : 'Complete');
+		$('#tsi-progress-detail').text(isDryRun ? 'No changes were made.' : 'Import finished successfully.');
 
 		/* Summary badges */
-		$('#tsi-results-summary').html(
+		var badgeHtml =
 			'<span class="tsi-badge tsi-badge-inserted"><span class="dashicons dashicons-plus-alt"></span> ' + totals.inserted + ' Inserted</span>' +
 			'<span class="tsi-badge tsi-badge-updated"><span class="dashicons dashicons-update"></span> ' + totals.updated + ' Updated</span>' +
 			'<span class="tsi-badge tsi-badge-skipped"><span class="dashicons dashicons-minus"></span> ' + totals.skipped + ' Skipped</span>' +
-			'<span class="tsi-badge tsi-badge-errors"><span class="dashicons dashicons-warning"></span> ' + totals.errors + ' Errors</span>'
-		);
+			'<span class="tsi-badge tsi-badge-errors"><span class="dashicons dashicons-warning"></span> ' + totals.errors + ' Errors</span>';
+		if (isDryRun) {
+			badgeHtml = '<span class="tsi-badge tsi-badge-dry">[DRY RUN]</span> ' + badgeHtml;
+		}
+		$('#tsi-results-summary').html(badgeHtml);
 
 		/* Full log */
 		if (allLogs.length) {
@@ -778,9 +946,60 @@
 			$('#tsi-results-log').html(html);
 		}
 
+		/* Show download log button (#12) */
+		$('#tsi-btn-download-log').toggle(allLogs.length > 0);
+
+		/* Show rollback button only for non-dry-run imports with a history ID */
+		$('#tsi-btn-rollback').toggle(!isDryRun && !!lastHistoryId);
+
 		$('#tsi-step-results').slideDown(200);
 		scrollTo('#tsi-step-results');
 	}
+
+	/* Download log as CSV (#12) */
+	$('#tsi-btn-download-log').on('click', function () {
+		if (!lastAllLogs.length) {
+			return;
+		}
+		var csv = 'Row,Status,Message\n';
+		$.each(lastAllLogs, function (idx, line) {
+			csv += '"' + (idx + 1) + '","' + line.replace(/"/g, '""') + '"\n';
+		});
+		var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+		var link = document.createElement('a');
+		link.href     = URL.createObjectURL(blob);
+		link.download = 'import-log-' + new Date().toISOString().slice(0, 10) + '.csv';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	});
+
+	/* Rollback import */
+	$('#tsi-btn-rollback').on('click', function () {
+		if (!lastHistoryId) {
+			return;
+		}
+		if (!window.confirm('This will move all imported posts to trash. Continue?')) {
+			return;
+		}
+		showOverlay('Rolling back\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:     'tsi_rollback',
+			nonce:      tsiImporter.nonce,
+			history_id: lastHistoryId
+		}, function (res) {
+			hideOverlay();
+			if (!res.success) {
+				window.alert(res.data || 'Rollback failed.');
+				return;
+			}
+			window.alert(res.data.message);
+			$('#tsi-btn-rollback').hide();
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Rollback request failed.');
+		});
+	});
 
 	/* Start New Import */
 	$('#tsi-btn-new').on('click', function () {
@@ -789,7 +1008,319 @@
 	});
 
 	/* ================================================================
-	 * Helpers
+	 * Validate CSV (#7)
+	 * ================================================================ */
+
+	$('#tsi-btn-validate').on('click', function () {
+		var mapping = buildMappingPayload();
+		var hasMapping = false;
+		var k;
+		for (k in mapping) {
+			if (mapping.hasOwnProperty(k)) {
+				hasMapping = true;
+				break;
+			}
+		}
+		if (!hasMapping) {
+			window.alert('Please map at least one field before validating.');
+			return;
+		}
+
+		showOverlay('Validating\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:    'tsi_validate_csv',
+			nonce:     tsiImporter.nonce,
+			token:     csvToken,
+			post_type: $('#tsi-post-type').val(),
+			mapping:   JSON.stringify(mapping)
+		}, function (res) {
+			hideOverlay();
+			if (!res.success) {
+				window.alert(res.data || 'Validation failed.');
+				return;
+			}
+			var d = res.data;
+			var html = '<h3>' + esc(d.message) + '</h3>';
+			if (d.errors.length) {
+				html += '<div class="tsi-validation-errors"><h4>Errors (' + d.errors.length + ')</h4>';
+				$.each(d.errors, function (i, e) {
+					html += '<div class="tsi-log-error">' + esc(e) + '</div>';
+				});
+				html += '</div>';
+			}
+			if (d.warnings.length) {
+				html += '<div class="tsi-validation-warnings"><h4>Warnings (' + d.warnings.length + ')</h4>';
+				$.each(d.warnings, function (i, w) {
+					html += '<div class="tsi-log-skip">' + esc(w) + '</div>';
+				});
+				html += '</div>';
+			}
+			if (!d.errors.length && !d.warnings.length) {
+				html += '<p class="tsi-validation-ok"><span class="dashicons dashicons-yes-alt"></span> No issues found.</p>';
+			}
+			$('#tsi-validation-results').html(html);
+			$('#tsi-step-validation').slideDown(200);
+			scrollTo('#tsi-step-validation');
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Validation request failed.');
+		});
+	});
+
+	/* ================================================================
+	 * Duplicate check toggle (#3)
+	 * ================================================================ */
+
+	$('#tsi-dup-check').on('change', function () {
+		$('#tsi-dup-options').toggle($(this).is(':checked'));
+	});
+
+	$('#tsi-dup-field').on('change', function () {
+		$('#tsi-dup-meta-wrap').toggle($(this).val() === 'meta_key');
+	});
+
+	/* ================================================================
+	 * Mapping Profiles (#6)
+	 * ================================================================ */
+
+	$('#tsi-btn-save-profile').on('click', function () {
+		var name = window.prompt('Enter a name for this mapping profile:');
+		if (!name) {
+			return;
+		}
+		var mapping = buildMappingPayload();
+		showOverlay('Saving profile\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:       'tsi_save_profile',
+			nonce:        tsiImporter.nonce,
+			profile_name: name,
+			post_type:    $('#tsi-post-type').val(),
+			mapping:      JSON.stringify(mapping)
+		}, function (res) {
+			hideOverlay();
+			if (!res.success) {
+				window.alert(res.data || 'Save failed.');
+				return;
+			}
+			updateProfileDropdown(res.data.profiles);
+			window.alert(res.data.message);
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Save profile request failed.');
+		});
+	});
+
+	$('#tsi-btn-delete-profile').on('click', function () {
+		var id = $('#tsi-profile-select').val();
+		if (!id) {
+			window.alert('Please select a profile to delete.');
+			return;
+		}
+		if (!window.confirm('Delete this mapping profile?')) {
+			return;
+		}
+		$.post(tsiImporter.ajax_url, {
+			action:     'tsi_delete_profile',
+			nonce:      tsiImporter.nonce,
+			profile_id: id
+		}, function (res) {
+			if (res.success) {
+				updateProfileDropdown(res.data.profiles);
+			}
+		});
+	});
+
+	$('#tsi-profile-select').on('change', function () {
+		var id = $(this).val();
+		if (!id) {
+			return;
+		}
+		var profiles = tsiImporter.profiles || {};
+		if (profiles[id] && profiles[id].mapping) {
+			applyProfileMapping(profiles[id].mapping);
+		}
+	});
+
+	function updateProfileDropdown(profiles) {
+		tsiImporter.profiles = profiles;
+		var $sel = $('#tsi-profile-select').empty().append('<option value="">— select profile —</option>');
+		var pt   = $('#tsi-post-type').val();
+		$.each(profiles, function (id, p) {
+			if (!pt || p.post_type === pt) {
+				$sel.append('<option value="' + esc(id) + '">' + esc(p.name) + '</option>');
+			}
+		});
+	}
+
+	function applyProfileMapping(profileMapping) {
+		$('#tsi-mapping-table tbody tr').each(function () {
+			var field = $(this).data('field');
+			var pm    = profileMapping[field];
+			var $cb   = $(this).find('.tsi-field-check');
+			var $sel  = $(this).find('.tsi-col-select');
+
+			if (pm) {
+				if (pm.source === 'custom') {
+					$sel.val('__custom__');
+					$(this).find('.tsi-custom-value').val(pm.value || '').show();
+				} else {
+					$sel.val(String(pm.col));
+					$(this).find('.tsi-custom-value').hide();
+				}
+				$cb.prop('checked', true);
+			} else {
+				$sel.val('-1');
+				$cb.prop('checked', false);
+				$(this).find('.tsi-custom-value').hide();
+			}
+		});
+		updateMappingCount();
+	}
+
+	/* ================================================================
+	 * Import History (#2)
+	 * ================================================================ */
+
+	function loadHistory() {
+		$('#tsi-history-body').html('<tr><td colspan="6">Loading\u2026</td></tr>');
+		$.post(tsiImporter.ajax_url, {
+			action: 'tsi_get_history',
+			nonce:  tsiImporter.nonce
+		}, function (res) {
+			if (!res.success) {
+				return;
+			}
+			var history = res.data.history;
+			var html    = '';
+			if (!history || !history.length) {
+				html = '<tr><td colspan="6">No imports recorded yet.</td></tr>';
+			} else {
+				$.each(history, function (i, h) {
+					var statusClass = h.rolled_back ? 'tsi-history-rolled-back' : '';
+					html += '<tr class="' + statusClass + '">' +
+						'<td>' + esc(h.date) + '</td>' +
+						'<td>' + esc(h.post_type) + '</td>' +
+						'<td>' + esc(h.mode) + '</td>' +
+						'<td>' + h.inserted + ' / ' + h.updated + ' / ' + (h.skipped || 0) + ' / ' + (h.errors || 0) + '</td>' +
+						'<td>' + (h.post_ids ? h.post_ids.length : 0) + ' posts</td>' +
+						'<td>' + (h.rolled_back ? '<em>Rolled back</em>' : '<button type="button" class="button button-small tsi-rollback-history" data-id="' + esc(h.id) + '">Rollback</button>') + '</td>' +
+						'</tr>';
+				});
+			}
+			$('#tsi-history-body').html(html);
+		});
+	}
+
+	$(document).on('click', '.tsi-rollback-history', function () {
+		var hid = $(this).data('id');
+		if (!window.confirm('Move all posts from this import to trash?')) {
+			return;
+		}
+		var $btn = $(this);
+		showOverlay('Rolling back\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:     'tsi_rollback',
+			nonce:      tsiImporter.nonce,
+			history_id: hid
+		}, function (res) {
+			hideOverlay();
+			if (res.success) {
+				$btn.replaceWith('<em>Rolled back</em>');
+				window.alert(res.data.message);
+			} else {
+				window.alert(res.data || 'Rollback failed.');
+			}
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Rollback request failed.');
+		});
+	});
+
+	/* ================================================================
+	 * Scheduled Imports (#1)
+	 * ================================================================ */
+
+	function loadSchedules() {
+		var schedules = tsiImporter.schedules || {};
+		var html = '';
+		$.each(schedules, function (id, s) {
+			html += '<tr>' +
+				'<td>' + esc(s.name) + '</td>' +
+				'<td>' + esc(s.post_type) + '</td>' +
+				'<td>' + esc(s.frequency) + '</td>' +
+				'<td>' + esc(s.last_run || 'Never') + '</td>' +
+				'<td>' + esc(s.last_status || 'N/A') + '</td>' +
+				'<td><button type="button" class="button button-small tsi-delete-schedule" data-id="' + esc(id) + '">Delete</button></td>' +
+				'</tr>';
+		});
+		if (!html) {
+			html = '<tr><td colspan="6">No scheduled imports.</td></tr>';
+		}
+		$('#tsi-schedule-body').html(html);
+
+		/* Populate profile dropdown in schedule form */
+		var $psel = $('#tsi-schedule-profile').empty().append('<option value="">— auto-match —</option>');
+		var profiles = tsiImporter.profiles || {};
+		$.each(profiles, function (id, p) {
+			$psel.append('<option value="' + esc(id) + '">' + esc(p.name) + '</option>');
+		});
+	}
+
+	$('#tsi-btn-add-schedule').on('click', function () {
+		var name = $('#tsi-schedule-name').val().trim();
+		var url  = $('#tsi-schedule-url').val().trim();
+		var freq = $('#tsi-schedule-freq').val();
+		var prof = $('#tsi-schedule-profile').val();
+
+		if (!name || !url) {
+			window.alert('Please enter a name and CSV URL.');
+			return;
+		}
+
+		showOverlay('Creating schedule\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:        'tsi_add_schedule',
+			nonce:         tsiImporter.nonce,
+			schedule_name: name,
+			csv_url:       url,
+			post_type:     $('#tsi-post-type').val(),
+			frequency:     freq,
+			profile_id:    prof
+		}, function (res) {
+			hideOverlay();
+			if (!res.success) {
+				window.alert(res.data || 'Failed to create schedule.');
+				return;
+			}
+			tsiImporter.schedules = res.data.schedules;
+			loadSchedules();
+			$('#tsi-schedule-name, #tsi-schedule-url').val('');
+			window.alert(res.data.message);
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Schedule request failed.');
+		});
+	});
+
+	$(document).on('click', '.tsi-delete-schedule', function () {
+		var sid = $(this).data('id');
+		if (!window.confirm('Delete this schedule?')) {
+			return;
+		}
+		$.post(tsiImporter.ajax_url, {
+			action:      'tsi_delete_schedule',
+			nonce:       tsiImporter.nonce,
+			schedule_id: sid
+		}, function (res) {
+			if (res.success) {
+				tsiImporter.schedules = res.data.schedules;
+				loadSchedules();
+			}
+		});
+	});
+
+	/* ================================================================
+	 * Helpers — History & Schedule step resets
 	 * ================================================================ */
 
 	function resetFrom(stepId) {
@@ -802,17 +1333,15 @@
 				found = true;
 			}
 		});
-		$('#tsi-step-source, #tsi-step-mapping, #tsi-step-progress, #tsi-step-results').each(function () {
-			if (this.id !== stepId) {
-				/* handled above */
-			}
-		});
 		if (stepId === 'tsi-step-source') {
 			$('#tsi-step-export').hide();
 			$('#tsi-step-source').hide();
 			$('#tsi-step-mapping').hide();
 			$('#tsi-step-progress').hide();
 			$('#tsi-step-results').hide();
+			$('#tsi-step-validation').hide();
+			$('#tsi-step-history').hide();
+			$('#tsi-step-schedule').hide();
 		}
 	}
 
@@ -829,9 +1358,11 @@
 		$('#tsi-csv-url').val('');
 		$('#tsi-file-info').hide().empty();
 		$('#tsi-preview').hide().empty();
+		$('#tsi-file-queue').hide().empty();
 		csvHeaders  = [];
 		csvToken    = '';
 		csvRowCount = 0;
+		fileQueue   = [];
 	}
 
 	function resetProgress() {
@@ -842,6 +1373,8 @@
 		$('#tsi-live-log').empty();
 		$('#tsi-results-summary').empty();
 		$('#tsi-results-log').empty();
+		lastHistoryId = '';
+		lastAllLogs   = [];
 	}
 
 	function showOverlay(text) {
@@ -860,9 +1393,6 @@
 		}
 	}
 
-	/**
-	 * Escape a string for safe HTML rendering.
-	 */
 	function esc(str) {
 		if (typeof str !== 'string') {
 			return str;
@@ -872,9 +1402,6 @@
 		return div.innerHTML;
 	}
 
-	/**
-	 * Trigger a file download from a base64-encoded CSV string.
-	 */
 	function downloadBase64(b64, filename) {
 		var byteChars   = atob(b64);
 		var byteNumbers = new Array(byteChars.length);

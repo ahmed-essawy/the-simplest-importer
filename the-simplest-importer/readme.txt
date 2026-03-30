@@ -3,7 +3,7 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -32,6 +32,17 @@ Import, export, and manage WordPress posts and custom post types via CSV with vi
 * **Select All / Deselect All** — Quickly toggle field mappings.
 * **Developer Friendly** — Action hooks and filters to extend import behaviour.
 * **Admin Only** — Requires `manage_options` capability. No front-end output, no tracking, no external calls.
+* **Scheduled Imports** — Set up recurring WP-Cron imports from a URL (hourly, twice daily, daily, weekly).
+* **Import History & Rollback** — View past imports and move imported posts to trash with one click.
+* **Duplicate Detection** — Skip rows when a matching post title, slug, or meta key already exists.
+* **Field Transforms** — Apply per-field transforms during import: uppercase, lowercase, title case, trim, strip tags, slug, and date formats.
+* **Mapping Profiles** — Save and reuse column mapping configurations.
+* **CSV Validation** — Check for issues before importing: invalid dates, statuses, author IDs, and thumbnail URLs.
+* **Dry Run Mode** — Preview what an import would do without touching the database.
+* **Multi-file Upload** — Drag-and-drop multiple CSV files to queue them for sequential import.
+* **Delimiter Auto-detection** — Handles comma, semicolon, tab, and pipe delimiters automatically.
+* **Selective Column Export** — Choose which fields to include in your export.
+* **Status Filter Export** — Filter exported posts by publish status.
 
 **Supported Post Types:**
 
@@ -88,6 +99,23 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 6. Step 6 — Color-coded result summary with detailed log.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: Scheduled imports — WP-Cron based recurring imports from URL (hourly, twice daily, daily, weekly).
+* Added: Import history — records last 50 imports with post IDs, supports rollback to trash.
+* Added: Duplicate detection — skip imports when matching post title, slug, or custom meta key.
+* Added: Field transforms — per-field transforms during import (uppercase, lowercase, title case, trim, strip tags, slug, date formats).
+* Added: Status filter export — filter exported posts by status.
+* Added: Mapping profiles — save, load, and delete column mapping configurations per post type.
+* Added: CSV validation — pre-import validation checking dates, statuses, author IDs, and thumbnail URLs.
+* Added: Multi-file upload — drag-and-drop multiple CSV files, queued for sequential processing.
+* Added: Selective column export — choose which fields to include in export.
+* Added: Delimiter auto-detection — automatically detects comma, semicolon, tab, or pipe delimiters.
+* Added: Dry run mode — preview import results without making any database changes.
+* Added: Download import log — export per-row import results as CSV.
+* Added: Import rollback — move all posts from a specific import to trash.
+* Added: Sticky post type — remembers last selected post type via localStorage.
+* Added: Export row count — shows post count in the export button.
 
 = 1.0.0 =
 * Initial release.

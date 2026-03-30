@@ -4,7 +4,7 @@
 
 WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV. Single-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
 
-- **Version**: 1.0.0
+- **Version**: 1.1.0
 - **License**: GPL-2.0-or-later
 - **Requires**: WordPress 5.8+, PHP 7.4+
 - **Tested up to**: WordPress 6.9
@@ -122,6 +122,48 @@ Filters:
 Actions:
 - `tsi_after_import_row` — fires after each row import with `$post_id`, `$row`, `$row_num`, `$is_update`
 
+## v1.1.0 Features
+
+1. **Scheduled Imports** — WP-Cron based recurring imports from URL (hourly/twicedaily/daily/weekly)
+2. **Import History** — Records last 50 imports with post IDs, supports rollback (trash)
+3. **Duplicate Detection** — Skip imports when matching post_title, post_name, or custom meta key
+4. **Field Transforms** — Per-field transforms during import (uppercase, lowercase, titlecase, trim, strip_tags, slug, date formats)
+5. **Status Filter Export** — Filter exported posts by status (publish, draft, pending, private, future)
+6. **Mapping Profiles** — Save/load/delete column mapping configurations per post type
+7. **CSV Validation** — Pre-import validation checking dates, statuses, author IDs, thumbnail URLs
+8. **Multi-file Upload** — Drag-and-drop multiple CSV files, queued for sequential processing
+9. **Selective Column Export** — Choose which fields to include in export
+10. **Delimiter Auto-detection** — Automatically detects comma, semicolon, tab, or pipe delimiters
+11. **Dry Run Mode** — Preview import results without making any database changes
+12. **Download Import Log** — Export per-row import results as CSV
+13. **Import Rollback** — Move all posts from a specific import to trash
+14. **Sticky Post Type** — Remembers last selected post type via localStorage
+15. **Export Row Count** — Shows post count in the export button
+
+### New Constants
+- `TSI_HISTORY_OPTION` — wp_options key for import history
+- `TSI_PROFILES_OPTION` — wp_options key for mapping profiles
+- `TSI_SCHEDULES_OPTION` — wp_options key for scheduled imports
+
+### New AJAX Handlers
+- `tsi_save_profile` — Save a mapping profile
+- `tsi_delete_profile` — Delete a mapping profile
+- `tsi_validate_csv` — Validate CSV data before import
+- `tsi_rollback` — Rollback an import by trashing posts
+- `tsi_get_history` — Fetch import history
+- `tsi_add_schedule` — Create a scheduled import
+- `tsi_delete_schedule` — Remove a scheduled import
+
+### New Helper Functions
+- `tsi_apply_transform()` — Apply named transform to a field value
+- `tsi_check_duplicate()` — Check for duplicate posts by field
+- `tsi_record_import_history()` — Save import to history
+- `tsi_get_import_history()` — Retrieve import history
+- `tsi_get_mapping_profiles()` — Retrieve saved profiles
+- `tsi_get_scheduled_imports()` — Retrieve scheduled imports
+- `tsi_run_scheduled_import()` — WP-Cron callback for scheduled imports
+- `tsi_add_cron_interval()` — Registers weekly cron schedule
+
 ## Coding Standards
 
 ### PHP
@@ -171,9 +213,10 @@ Three places must stay in sync on every release:
 
 **No custom tables.** Uses only:
 - WordPress transients for temporary CSV data storage (`tsi_csv_data_{token}`)
+- `wp_options` for import history (`tsi_import_history`), mapping profiles (`tsi_mapping_profiles`), and scheduled imports (`tsi_scheduled_imports`)
 - Standard `wp_posts`, `wp_postmeta`, `wp_terms` via WordPress APIs
 
-`uninstall.php` cleans up all `tsi_csv_data_*` transients via direct `$wpdb` query.
+`uninstall.php` cleans up all `tsi_csv_data_*` transients via direct `$wpdb` query, plus `tsi_import_history`, `tsi_mapping_profiles`, `tsi_scheduled_imports` options and their associated cron events.
 
 ## Asset Loading
 

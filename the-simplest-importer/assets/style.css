@@ -426,6 +426,7 @@
 .tsi-mapping-toolbar {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
 	margin-bottom: 12px;
 }
@@ -726,6 +727,7 @@
 
 	.tsi-card-header {
 		padding: 14px 16px;
+		gap: 12px;
 	}
 
 	.tsi-card-body {
@@ -733,15 +735,13 @@
 	}
 
 	.tsi-action-grid {
-		grid-template-columns: 1fr;
+		grid-template-columns: 1fr 1fr;
 		gap: 10px;
 	}
 
 	.tsi-action-card {
-		flex-direction: row;
-		padding: 16px;
-		gap: 12px;
-		text-align: left;
+		padding: 16px 12px;
+		gap: 6px;
 	}
 
 	.tsi-action-card .dashicons {
@@ -759,13 +759,29 @@
 		max-width: 100%;
 	}
 
+	.tsi-mapping-toolbar {
+		flex-wrap: wrap;
+	}
+
+	.tsi-mapping-toolbar .tsi-mapping-count {
+		width: 100%;
+		margin-left: 0;
+		text-align: right;
+	}
+
 	.tsi-mapping-actions {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
+	.tsi-import-buttons {
+		flex-wrap: wrap;
+	}
+
 	.tsi-btn-run {
 		justify-content: center;
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 
 	.tsi-source-tabs {
@@ -788,6 +804,135 @@
 	.tsi-export-options {
 		grid-template-columns: 1fr;
 	}
+
+	.tsi-export-range-fields,
+	.tsi-export-date-fields {
+		flex-wrap: wrap;
+		padding-left: 24px;
+		gap: 8px;
+	}
+
+	.tsi-export-advanced-body {
+		overflow-x: auto;
+	}
+
+	.tsi-export-fields-list {
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.tsi-file-info {
+		flex-wrap: wrap;
+	}
+
+	.tsi-results-actions {
+		flex-wrap: wrap;
+	}
+
+	.tsi-import-options {
+		flex-direction: column;
+	}
+
+	.tsi-profile-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.tsi-profile-select {
+		width: 100%;
+	}
+
+	.tsi-schedule-form {
+		flex-direction: column;
+	}
+
+	.tsi-schedule-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		width: 100%;
+	}
+
+	.tsi-schedule-fields label {
+		width: 100%;
+	}
+
+	.tsi-schedule-form input,
+	.tsi-schedule-form select {
+		min-width: 0;
+		width: 100%;
+	}
+
+	.tsi-history-table,
+	.tsi-schedule-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.tsi-history-table thead,
+	.tsi-history-table tbody,
+	.tsi-schedule-table thead,
+	.tsi-schedule-table tbody {
+		min-width: 580px;
+		display: table;
+		width: 100%;
+	}
+
+	.tsi-export-statuses label,
+	.tsi-export-field-label {
+		display: flex;
+		margin-bottom: 4px;
+	}
+
+	.tsi-status-checks {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+	}
+
+	.tsi-summary {
+		gap: 8px;
+	}
+
+	.tsi-badge {
+		flex: 1 1 auto;
+		justify-content: center;
+		min-width: 0;
+		text-align: center;
+		padding: 8px 12px;
+		font-size: 13px;
+	}
+
+	.tsi-col-map-inner {
+		flex-wrap: wrap;
+	}
+
+	.tsi-transform-select {
+		max-width: 100%;
+	}
+
+	#tsi-dup-options {
+		padding-left: 0;
+	}
+
+	.tsi-live-log {
+		max-height: 150px;
+		font-size: 11px;
+		padding: 8px 10px;
+	}
+
+	.tsi-log {
+		max-height: 260px;
+		padding: 10px 12px;
+		font-size: 11px;
+	}
+
+	.tsi-overlay-inner {
+		margin: 0 16px;
+		padding: 20px 24px;
+		font-size: 14px;
+	}
 }
 
 /* ------------------------------------------------------------------
@@ -797,6 +942,13 @@
 @media screen and (max-width: 480px) {
 	.tsi-header h1 {
 		font-size: 18px;
+		gap: 8px;
+	}
+
+	.tsi-header h1 .dashicons {
+		font-size: 22px;
+		width: 22px;
+		height: 22px;
 	}
 
 	.tsi-step-num {
@@ -806,23 +958,208 @@
 		font-size: 12px;
 	}
 
+	.tsi-card-header {
+		padding: 12px;
+		gap: 10px;
+	}
+
 	.tsi-card-header h2 {
 		font-size: 14px;
 	}
 
+	.tsi-card-header p {
+		font-size: 11.5px;
+	}
+
+	.tsi-card-body {
+		padding: 12px;
+	}
+
+	.tsi-action-grid {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+
+	.tsi-action-card {
+		flex-direction: row;
+		padding: 14px 12px;
+		gap: 10px;
+		text-align: left;
+	}
+
+	.tsi-action-card .dashicons {
+		font-size: 22px;
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+	}
+
+	.tsi-action-card strong {
+		font-size: 13px;
+	}
+
+	.tsi-action-desc {
+		font-size: 11px;
+	}
+
 	.tsi-badge {
-		padding: 8px 14px;
-		font-size: 12px;
+		padding: 6px 10px;
+		font-size: 11px;
+		border-radius: 6px;
+	}
+
+	.tsi-badge .dashicons {
+		font-size: 14px;
+		width: 14px;
+		height: 14px;
 	}
 
 	.tsi-summary {
 		gap: 6px;
 	}
 
+	.tsi-dropzone-inner {
+		padding: 20px 10px;
+	}
+
 	.tsi-dropzone-inner > .dashicons {
 		font-size: 36px;
 		width: 36px;
 		height: 36px;
+	}
+
+	.tsi-dropzone-title {
+		font-size: 13px;
+	}
+
+	.tsi-source-tab {
+		padding: 8px 12px;
+		font-size: 12px;
+	}
+
+	.tsi-import-buttons {
+		flex-direction: column;
+	}
+
+	.tsi-btn-run {
+		width: 100%;
+	}
+
+	.tsi-mapping-toolbar {
+		gap: 6px;
+	}
+
+	.tsi-mapping-toolbar .button {
+		font-size: 11px;
+		padding: 2px 8px;
+	}
+
+	.tsi-mapping-table thead th {
+		font-size: 10px;
+		padding: 8px 6px;
+	}
+
+	.tsi-mapping-table tbody td {
+		padding: 8px 6px;
+		font-size: 12px;
+	}
+
+	.tsi-col-check {
+		width: 32px;
+	}
+
+	.tsi-transform-select {
+		max-width: 110px;
+		font-size: 11px;
+	}
+
+	.tsi-import-options {
+		padding: 10px 12px;
+		gap: 10px;
+		font-size: 12px;
+	}
+
+	.tsi-file-info {
+		font-size: 12px;
+		padding: 10px 12px;
+		gap: 6px;
+	}
+
+	.tsi-delimiter-badge {
+		font-size: 11px;
+	}
+
+	.tsi-progress-pct {
+		font-size: 12px;
+	}
+
+	.tsi-progress-bar {
+		height: 18px;
+		border-radius: 9px;
+	}
+
+	.tsi-progress-fill {
+		border-radius: 9px;
+	}
+
+	.tsi-results-actions {
+		flex-direction: column;
+	}
+
+	.tsi-results-actions .button {
+		width: 100%;
+		text-align: center;
+		justify-content: center;
+	}
+
+	.tsi-export-actions .button {
+		width: 100%;
+		text-align: center;
+	}
+
+	.tsi-export-range-fields label,
+	.tsi-export-date-fields label {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 4px;
+	}
+
+	.tsi-export-range-fields input,
+	.tsi-export-date-fields input {
+		width: 100%;
+	}
+
+	.tsi-schedule-form {
+		padding: 10px;
+	}
+
+	.tsi-schedule-form h4 {
+		font-size: 13px;
+	}
+
+	.tsi-history-table th,
+	.tsi-history-table td,
+	.tsi-schedule-table th,
+	.tsi-schedule-table td {
+		padding: 5px 6px;
+		font-size: 12px;
+		white-space: nowrap;
+	}
+
+	.tsi-validation-errors,
+	.tsi-validation-warnings {
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	#tsi-validation-results h3 {
+		font-size: 13px;
+	}
+
+	.tsi-overlay-inner {
+		margin: 0 12px;
+		padding: 16px 20px;
+		font-size: 13px;
 	}
 }
 
@@ -933,4 +1270,317 @@
 	height: 16px;
 	vertical-align: text-bottom;
 	margin-right: 2px;
+}
+
+/* ================================================================
+ * New feature styles (v1.1.0)
+ * ================================================================ */
+
+/* Delimiter badge (#11) */
+.tsi-delimiter-badge {
+	display: inline-block;
+	margin-left: 8px;
+	padding: 2px 8px;
+	background: #f0f0f0;
+	border-radius: 3px;
+	font-size: 12px;
+	color: #555;
+}
+
+.tsi-delimiter-badge code {
+	font-weight: 600;
+}
+
+/* Transform column (#4) */
+.tsi-transform-select {
+	width: 100%;
+	max-width: 160px;
+	font-size: 12px;
+}
+
+/* Import options: dry run, duplicate check (#13, #3) */
+.tsi-import-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 12px 0;
+	padding: 12px 16px;
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.tsi-import-options label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+#tsi-dup-options {
+	display: none;
+	margin-top: 4px;
+	padding-left: 24px;
+}
+
+#tsi-dup-options select,
+#tsi-dup-options input {
+	margin: 0 4px;
+}
+
+#tsi-dup-meta-wrap {
+	display: none;
+}
+
+/* Profile toolbar (#6) */
+.tsi-profile-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding: 8px 12px;
+	background: #f0f6fc;
+	border: 1px solid #c3d1e0;
+	border-radius: 4px;
+}
+
+.tsi-profile-toolbar select {
+	min-width: 180px;
+}
+
+.tsi-profile-toolbar .button {
+	white-space: nowrap;
+}
+
+/* Validation panel (#7) */
+#tsi-step-validation {
+	display: none;
+}
+
+.tsi-validation-errors h4 {
+	color: #d63638;
+	margin: 8px 0 4px;
+}
+
+.tsi-validation-warnings h4 {
+	color: #996800;
+	margin: 8px 0 4px;
+}
+
+.tsi-validation-ok {
+	color: #00a32a;
+	font-size: 14px;
+}
+
+.tsi-validation-ok .dashicons {
+	color: #00a32a;
+}
+
+/* Dry run log style */
+.tsi-log-dry {
+	color: #2271b1;
+	font-style: italic;
+}
+
+/* Dry run badge */
+.tsi-badge-dry {
+	background: #2271b1 !important;
+	color: #fff !important;
+}
+
+/* Download log & Rollback buttons */
+#tsi-btn-download-log,
+#tsi-btn-rollback {
+	margin-top: 12px;
+	margin-right: 8px;
+}
+
+#tsi-btn-rollback {
+	color: #d63638;
+	border-color: #d63638;
+}
+
+#tsi-btn-rollback:hover {
+	background: #d63638;
+	color: #fff;
+}
+
+/* File queue indicator (#8) */
+#tsi-file-queue {
+	display: none;
+	margin: 8px 0;
+	padding: 8px 12px;
+	background: #f0f6fc;
+	border-left: 4px solid #2271b1;
+	font-size: 13px;
+}
+
+/* Export advanced options (#5, #9) */
+.tsi-export-advanced {
+	margin: 12px 0;
+}
+
+.tsi-export-advanced summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: #2271b1;
+	font-size: 13px;
+}
+
+.tsi-export-advanced summary:hover {
+	text-decoration: underline;
+}
+
+.tsi-export-statuses,
+.tsi-export-columns {
+	margin: 8px 0;
+	padding: 8px 12px;
+	background: #f9f9f9;
+	border: 1px solid #eee;
+	border-radius: 4px;
+}
+
+.tsi-export-statuses label,
+.tsi-export-field-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-right: 12px;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+/* History panel (#2) */
+#tsi-step-history {
+	display: none;
+}
+
+.tsi-history-table {
+	width: 100%;
+	margin-top: 8px;
+	border-collapse: collapse;
+}
+
+.tsi-history-table th {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 2px solid #c3c4c7;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.tsi-history-table td {
+	padding: 6px 8px;
+	border-bottom: 1px solid #eee;
+	font-size: 13px;
+}
+
+.tsi-history-rolled-back td {
+	opacity: 0.5;
+	text-decoration: line-through;
+}
+
+/* Schedule panel (#1) */
+#tsi-step-schedule {
+	display: none;
+}
+
+.tsi-schedule-table {
+	width: 100%;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	border-collapse: collapse;
+}
+
+.tsi-schedule-table th {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 2px solid #c3c4c7;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.tsi-schedule-table td {
+	padding: 6px 8px;
+	border-bottom: 1px solid #eee;
+	font-size: 13px;
+}
+
+.tsi-schedule-form {
+	margin-top: 12px;
+	padding: 12px;
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.tsi-schedule-form h4 {
+	margin: 0 0 10px;
+	font-size: 14px;
+	width: 100%;
+}
+
+.tsi-schedule-form label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.tsi-schedule-form input,
+.tsi-schedule-form select {
+	min-width: 140px;
+	max-width: 100%;
+}
+
+.tsi-schedule-form .description {
+	margin: 8px 0 4px;
+}
+
+.tsi-schedule-form .button {
+	margin-top: 8px;
+}
+
+/* Action grid — History & Schedule cards */
+.tsi-action-card--history .dashicons,
+.tsi-action-card--schedule .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+}
+
+/* Schedule fields layout */
+.tsi-schedule-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	width: 100%;
+}
+
+.tsi-schedule-fields label {
+	flex: 1 1 200px;
+	min-width: 0;
+}
+
+/* Export sections */
+.tsi-export-section {
+	margin-bottom: 12px;
+}
+
+.tsi-export-section h4 {
+	margin: 0 0 6px;
+	font-size: 13px;
+}
+
+.tsi-status-checks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+}
+
+.tsi-export-fields-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
 }
