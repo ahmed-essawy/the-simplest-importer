@@ -3,7 +3,7 @@
  * Plugin Name:       The Simplest Importer
  * Plugin URI:        https://github.com/ahmed-essawy/the-simplest-importer
  * Description:       Import, export, and manage posts and custom post types via CSV with visual column mapping and batch processing.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Ahmed Essawy
@@ -20,12 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TSI_VERSION', '1.1.0' );
+define( 'TSI_VERSION', '1.2.0' );
 define( 'TSI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TSI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'TSI_HISTORY_OPTION', 'tsi_import_history' );
 define( 'TSI_PROFILES_OPTION', 'tsi_mapping_profiles' );
 define( 'TSI_SCHEDULES_OPTION', 'tsi_scheduled_imports' );
+define( 'TSI_EXPORT_SCHEDULES_OPTION', 'tsi_scheduled_exports' );
 
 /* ------------------------------------------------------------------
  * Admin Menu — Tools submenu
@@ -115,12 +116,13 @@ function tsi_enqueue_admin_assets( $hook ) {
 	);
 
 	wp_localize_script( 'tsi-admin', 'tsiImporter', array(
-		'ajax_url'   => admin_url( 'admin-ajax.php' ),
-		'nonce'      => wp_create_nonce( 'tsi_nonce' ),
-		'batch_size' => absint( apply_filters( 'tsi_import_batch_size', 50 ) ),
-		'profiles'   => tsi_get_mapping_profiles(),
-		'history'    => tsi_get_import_history(),
-		'schedules'  => tsi_get_scheduled_imports(),
+		'ajax_url'         => admin_url( 'admin-ajax.php' ),
+		'nonce'            => wp_create_nonce( 'tsi_nonce' ),
+		'batch_size'       => absint( apply_filters( 'tsi_import_batch_size', 50 ) ),
+		'profiles'         => tsi_get_mapping_profiles(),
+		'history'          => tsi_get_import_history(),
+		'schedules'        => tsi_get_scheduled_imports(),
+		'export_schedules' => tsi_get_export_schedules(),
 	) );
 }
 
@@ -161,7 +163,7 @@ function tsi_render_admin_page() {
 				<select id="tsi-post-type" class="tsi-select" aria-label="<?php esc_attr_e( 'Select content type', 'the-simplest-importer' ); ?>">
 					<option value=""><?php esc_html_e( '— Select content type —', 'the-simplest-importer' ); ?></option>
 				</select>
-				<p class="description tsi-entity-hint"><?php esc_html_e( 'Includes all post types with a UI, plus WordPress Users.', 'the-simplest-importer' ); ?></p>
+				<p class="description tsi-entity-hint"><?php esc_html_e( 'Includes all registered post types with a UI.', 'the-simplest-importer' ); ?></p>
 			</div>
 		</div>
 
@@ -344,7 +346,7 @@ function tsi_render_admin_page() {
 						<input type="url" id="tsi-csv-url" class="regular-text" placeholder="https://example.com/data.csv">
 						<button type="button" id="tsi-btn-fetch-url" class="button button-primary"><?php esc_html_e( 'Fetch', 'the-simplest-importer' ); ?></button>
 					</div>
-					<p class="description"><?php esc_html_e( 'Enter a direct link to a publicly accessible CSV file.', 'the-simplest-importer' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Enter a direct link to a publicly accessible CSV file. Google Sheets URLs are automatically converted.', 'the-simplest-importer' ); ?></p>
 				</div>
 
 				<div id="tsi-file-info" class="tsi-file-info" style="display:none"></div>
@@ -409,6 +411,15 @@ function tsi_render_admin_page() {
 								<input type="text" id="tsi-dup-meta-key" class="small-text" placeholder="<?php esc_attr_e( 'meta key', 'the-simplest-importer' ); ?>">
 							</span>
 						</div>
+					</div>
+					<div class="tsi-filter-section" id="tsi-filter-section" style="display:none">
+						<h4><?php esc_html_e( 'Row Filters', 'the-simplest-importer' ); ?></h4>
+						<p class="description"><?php esc_html_e( 'Only import rows matching all rules (AND logic).', 'the-simplest-importer' ); ?></p>
+						<div id="tsi-filter-rules"></div>
+						<button type="button" id="tsi-add-filter" class="button button-small">
+							<span class="dashicons dashicons-plus-alt2"></span>
+							<?php esc_html_e( 'Add Filter Rule', 'the-simplest-importer' ); ?>
+						</button>
 					</div>
 					<div class="tsi-import-buttons">
 						<button type="button" id="tsi-btn-validate" class="button tsi-btn-run">
@@ -547,13 +558,14 @@ function tsi_render_admin_page() {
 							<th><?php esc_html_e( 'Name', 'the-simplest-importer' ); ?></th>
 							<th><?php esc_html_e( 'Post Type', 'the-simplest-importer' ); ?></th>
 							<th><?php esc_html_e( 'Frequency', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Notify', 'the-simplest-importer' ); ?></th>
 							<th><?php esc_html_e( 'Last Run', 'the-simplest-importer' ); ?></th>
 							<th><?php esc_html_e( 'Status', 'the-simplest-importer' ); ?></th>
 							<th><?php esc_html_e( 'Actions', 'the-simplest-importer' ); ?></th>
 						</tr>
 					</thead>
 					<tbody id="tsi-schedule-body">
-						<tr><td colspan="6"><?php esc_html_e( 'No scheduled imports.', 'the-simplest-importer' ); ?></td></tr>
+						<tr><td colspan="7"><?php esc_html_e( 'No scheduled imports.', 'the-simplest-importer' ); ?></td></tr>
 					</tbody>
 				</table>
 				<div class="tsi-schedule-form">
@@ -582,9 +594,66 @@ function tsi_render_admin_page() {
 								<option value=""><?php esc_html_e( '— auto-match —', 'the-simplest-importer' ); ?></option>
 							</select>
 						</label>
+						<label>
+							<?php esc_html_e( 'Notify Email (optional):', 'the-simplest-importer' ); ?>
+							<input type="email" id="tsi-schedule-email" class="regular-text" placeholder="<?php esc_attr_e( 'admin@example.com', 'the-simplest-importer' ); ?>">
+						</label>
 					</div>
 					<p class="description"><?php esc_html_e( 'The schedule will use the currently selected post type.', 'the-simplest-importer' ); ?></p>
 					<button type="button" id="tsi-btn-add-schedule" class="button button-primary"><?php esc_html_e( 'Add Schedule', 'the-simplest-importer' ); ?></button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Scheduled Exports -->
+		<div class="tsi-card" id="tsi-step-export-schedule" style="display:none">
+			<div class="tsi-card-header">
+				<span class="tsi-step-num"><span class="dashicons dashicons-download"></span></span>
+				<div>
+					<h2><?php esc_html_e( 'Scheduled Exports', 'the-simplest-importer' ); ?></h2>
+					<p><?php esc_html_e( 'Automatically export posts on a recurring schedule and optionally receive the file by email.', 'the-simplest-importer' ); ?></p>
+				</div>
+			</div>
+			<div class="tsi-card-body">
+				<table class="widefat tsi-schedule-table">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Name', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Post Type', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Frequency', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Notify', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Last Run', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'the-simplest-importer' ); ?></th>
+							<th><?php esc_html_e( 'Actions', 'the-simplest-importer' ); ?></th>
+						</tr>
+					</thead>
+					<tbody id="tsi-export-schedule-body">
+						<tr><td colspan="7"><?php esc_html_e( 'No scheduled exports.', 'the-simplest-importer' ); ?></td></tr>
+					</tbody>
+				</table>
+				<div class="tsi-schedule-form">
+					<h4><?php esc_html_e( 'Add New Export Schedule', 'the-simplest-importer' ); ?></h4>
+					<div class="tsi-schedule-fields">
+						<label>
+							<?php esc_html_e( 'Name:', 'the-simplest-importer' ); ?>
+							<input type="text" id="tsi-export-schedule-name" class="regular-text" placeholder="<?php esc_attr_e( 'My weekly export', 'the-simplest-importer' ); ?>">
+						</label>
+						<label>
+							<?php esc_html_e( 'Frequency:', 'the-simplest-importer' ); ?>
+							<select id="tsi-export-schedule-freq">
+								<option value="hourly"><?php esc_html_e( 'Hourly', 'the-simplest-importer' ); ?></option>
+								<option value="twicedaily"><?php esc_html_e( 'Twice Daily', 'the-simplest-importer' ); ?></option>
+								<option value="daily"><?php esc_html_e( 'Daily', 'the-simplest-importer' ); ?></option>
+								<option value="weekly" selected><?php esc_html_e( 'Weekly', 'the-simplest-importer' ); ?></option>
+							</select>
+						</label>
+						<label>
+							<?php esc_html_e( 'Notify Email (optional):', 'the-simplest-importer' ); ?>
+							<input type="email" id="tsi-export-schedule-email" class="regular-text" placeholder="<?php esc_attr_e( 'admin@example.com', 'the-simplest-importer' ); ?>">
+						</label>
+					</div>
+					<p class="description"><?php esc_html_e( 'The schedule will export all posts of the currently selected post type. Files are stored in wp-content/uploads/tsi-exports/ and auto-deleted after 7 days.', 'the-simplest-importer' ); ?></p>
+					<button type="button" id="tsi-btn-add-export-schedule" class="button button-primary"><?php esc_html_e( 'Add Export Schedule', 'the-simplest-importer' ); ?></button>
 				</div>
 			</div>
 		</div>
@@ -751,6 +820,54 @@ function tsi_get_post_type_fields( $post_type ) {
 
 	$fields['_thumbnail_url'] = __( 'Featured Image URL', 'the-simplest-importer' );
 
+	/* SEO plugin fields — auto-detect Yoast SEO or Rank Math */
+	if ( defined( 'WPSEO_VERSION' ) ) {
+		$fields['meta___yoast_wpseo_title']    = __( 'SEO: Title (Yoast)', 'the-simplest-importer' );
+		$fields['meta___yoast_wpseo_metadesc'] = __( 'SEO: Description (Yoast)', 'the-simplest-importer' );
+		$fields['meta___yoast_wpseo_focuskw']  = __( 'SEO: Focus Keyword (Yoast)', 'the-simplest-importer' );
+	}
+
+	if ( class_exists( 'RankMath' ) || defined( 'RANK_MATH_VERSION' ) ) {
+		$fields['meta__rank_math_title']       = __( 'SEO: Title (Rank Math)', 'the-simplest-importer' );
+		$fields['meta__rank_math_description'] = __( 'SEO: Description (Rank Math)', 'the-simplest-importer' );
+		$fields['meta__rank_math_focus_keyword'] = __( 'SEO: Focus Keyword (Rank Math)', 'the-simplest-importer' );
+	}
+
+	/* ACF fields — auto-detect Advanced Custom Fields */
+	if ( function_exists( 'acf_get_field_groups' ) ) {
+		$acf_groups = acf_get_field_groups( array(
+			'post_type' => $post_type,
+		) );
+
+		$acf_simple_types = array(
+			'text', 'textarea', 'number', 'range', 'email', 'url', 'password',
+			'wysiwyg', 'select', 'radio', 'true_false', 'date_picker',
+			'date_time_picker', 'time_picker', 'color_picker',
+		);
+
+		foreach ( $acf_groups as $group ) {
+			$acf_fields = acf_get_fields( $group );
+			if ( ! is_array( $acf_fields ) ) {
+				continue;
+			}
+			foreach ( $acf_fields as $acf_field ) {
+				$key = 'meta__' . $acf_field['name'];
+				/* Only add if not already discovered via meta query above */
+				if ( isset( $fields[ $key ] ) ) {
+					/* Upgrade label from raw meta to friendly ACF label */
+					/* translators: %s: ACF field label */
+					$fields[ $key ] = sprintf( __( 'ACF: %s', 'the-simplest-importer' ), $acf_field['label'] );
+				} elseif ( in_array( $acf_field['type'], $acf_simple_types, true ) ) {
+					/* translators: %s: ACF field label */
+					$fields[ $key ] = sprintf( __( 'ACF: %s', 'the-simplest-importer' ), $acf_field['label'] );
+				} elseif ( 'image' === $acf_field['type'] || 'file' === $acf_field['type'] ) {
+					/* translators: 1: ACF field label, 2: field type */
+					$fields[ $key ] = sprintf( __( 'ACF: %1$s (%2$s URL)', 'the-simplest-importer' ), $acf_field['label'], $acf_field['type'] );
+				}
+			}
+		}
+	}
+
 	/**
 	 * Filter the importable fields for a post type.
 	 *
@@ -829,6 +946,9 @@ function tsi_ajax_parse_csv_url() {
 	if ( ! $url || ! wp_http_validate_url( $url ) ) {
 		wp_send_json_error( esc_html__( 'Invalid URL.', 'the-simplest-importer' ) );
 	}
+
+	/* Auto-convert Google Sheets URL to CSV export URL */
+	$url = tsi_convert_google_sheets_url( $url );
 
 	$response = wp_remote_get( $url, array( 'timeout' => 30 ) );
 	if ( is_wp_error( $response ) ) {
@@ -921,12 +1041,27 @@ function tsi_read_csv_file( $filepath ) {
 		return esc_html__( 'CSV file contains headers but no data rows.', 'the-simplest-importer' );
 	}
 
-	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, array(
+	/**
+	 * Filter parsed CSV data before storing in transient.
+	 *
+	 * @param array $csv_data {
+	 *     @type array  $headers   Column headers.
+	 *     @type array  $rows      All data rows.
+	 *     @type string $delimiter Detected delimiter character.
+	 * }
+	 */
+	$csv_data = apply_filters( 'tsi_csv_parsed', array(
 		'headers'   => $headers,
 		'rows'      => $rows,
 		'delimiter' => $delimiter,
-	), HOUR_IN_SECONDS );
+	) );
+
+	$headers   = $csv_data['headers'];
+	$rows      = $csv_data['rows'];
+	$delimiter = $csv_data['delimiter'];
+
+	$token = wp_generate_password( 20, false );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
 
 	$delimiter_labels = array(
 		','  => __( 'comma', 'the-simplest-importer' ),
@@ -942,6 +1077,54 @@ function tsi_read_csv_file( $filepath ) {
 		'token'     => $token,
 		'delimiter' => isset( $delimiter_labels[ $delimiter ] ) ? $delimiter_labels[ $delimiter ] : $delimiter,
 	);
+}
+
+/**
+ * Convert a Google Sheets URL to its CSV export equivalent.
+ *
+ * Accepts formats:
+ *   https://docs.google.com/spreadsheets/d/{ID}/edit#gid=0
+ *   https://docs.google.com/spreadsheets/d/{ID}/edit?...
+ *   https://docs.google.com/spreadsheets/d/{ID}/pub?...
+ *   https://docs.google.com/spreadsheets/d/e/{PUBID}/pub?output=csv
+ *
+ * If the URL is not a Google Sheets URL, returns it unchanged.
+ *
+ * @param string $url The original URL.
+ * @return string The CSV export URL, or original if not a Google Sheets URL.
+ */
+function tsi_convert_google_sheets_url( $url ) {
+	/* Already a CSV export URL */
+	if ( preg_match( '/output=csv/', $url ) ) {
+		return $url;
+	}
+
+	/* Standard Google Sheets URL: /spreadsheets/d/{ID}/... */
+	if ( preg_match( '#docs\.google\.com/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $matches ) ) {
+		$sheet_id = $matches[1];
+
+		/* Extract gid if present */
+		$gid = '0';
+		if ( preg_match( '/gid=(\d+)/', $url, $gid_matches ) ) {
+			$gid = $gid_matches[1];
+		}
+
+		return 'https://docs.google.com/spreadsheets/d/' . $sheet_id . '/export?format=csv&gid=' . $gid;
+	}
+
+	/* Published Google Sheets URL: /spreadsheets/d/e/{PUBID}/pub */
+	if ( preg_match( '#docs\.google\.com/spreadsheets/d/e/([a-zA-Z0-9_-]+)/pub#', $url, $matches ) ) {
+		$pub_id = $matches[1];
+
+		$gid = '0';
+		if ( preg_match( '/gid=(\d+)/', $url, $gid_matches ) ) {
+			$gid = $gid_matches[1];
+		}
+
+		return 'https://docs.google.com/spreadsheets/d/e/' . $pub_id . '/pub?output=csv&gid=' . $gid;
+	}
+
+	return $url;
 }
 
 /* ------------------------------------------------------------------
@@ -1049,6 +1232,14 @@ function tsi_ajax_export() {
 	$fields    = tsi_get_post_type_fields( $post_type );
 	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author' );
 
+	/**
+	 * Filter the list of columns included in an export.
+	 *
+	 * @param array  $fields    Associative array of field_key => label.
+	 * @param string $post_type The post type being exported.
+	 */
+	$fields = apply_filters( 'tsi_export_columns', $fields, $post_type );
+
 	/* Apply selective field filter if specified */
 	if ( ! empty( $selected_fields ) ) {
 		$fields    = array_intersect_key( $fields, array_flip( $selected_fields ) );
@@ -1092,6 +1283,15 @@ function tsi_ajax_export() {
 			$val   = get_post_meta( $p->ID, $m, true );
 			$row[] = is_array( $val ) ? wp_json_encode( $val ) : ( isset( $val ) ? (string) $val : '' );
 		}
+		/**
+		 * Filter a single export row before writing to CSV.
+		 *
+		 * @param array   $row    The row values.
+		 * @param WP_Post $p      The post object.
+		 * @param array   $header The CSV header row.
+		 */
+		$row = apply_filters( 'tsi_export_row', $row, $p, $header );
+
 		fputcsv( $output, $row );
 	}
 
@@ -1099,6 +1299,14 @@ function tsi_ajax_export() {
 	$csv_string = stream_get_contents( $output );
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://temp in-memory stream.
 	fclose( $output );
+
+	/**
+	 * Fires after an export completes.
+	 *
+	 * @param string $post_type  The exported post type.
+	 * @param int    $post_count Number of posts exported.
+	 */
+	do_action( 'tsi_export_completed', $post_type, count( $posts ) );
 
 	wp_send_json_success( array(
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Base64 needed to transport CSV binary through JSON.
@@ -1204,6 +1412,7 @@ function tsi_ajax_import_batch() {
 	$transforms = isset( $_POST['transforms'] ) ? wp_unslash( $_POST['transforms'] ) : '{}'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
 	$import_mode = isset( $_POST['import_mode'] ) ? sanitize_key( wp_unslash( $_POST['import_mode'] ) ) : 'insert';
 	$history_id  = isset( $_POST['history_id'] ) ? sanitize_text_field( wp_unslash( $_POST['history_id'] ) ) : '';
+	$filters_raw = isset( $_POST['filters'] ) ? wp_unslash( $_POST['filters'] ) : '[]'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
 
 	if ( ! $token || ! $post_type ) {
 		wp_send_json_error( esc_html__( 'Missing parameters.', 'the-simplest-importer' ) );
@@ -1236,6 +1445,29 @@ function tsi_ajax_import_batch() {
 		$transforms = array();
 	}
 
+	$filters = json_decode( $filters_raw, true );
+	if ( ! is_array( $filters ) ) {
+		$filters = array();
+	}
+	/* Sanitize filter rules */
+	$clean_filters = array();
+	$allowed_ops   = array( 'equals', 'not_equals', 'contains', 'not_contains', 'gt', 'lt', 'empty', 'not_empty' );
+	foreach ( $filters as $rule ) {
+		if ( ! is_array( $rule ) ) {
+			continue;
+		}
+		$col = isset( $rule['col'] ) ? absint( $rule['col'] ) : 0;
+		$op  = isset( $rule['op'] ) ? sanitize_key( $rule['op'] ) : '';
+		$val = isset( $rule['value'] ) ? sanitize_text_field( $rule['value'] ) : '';
+		if ( in_array( $op, $allowed_ops, true ) ) {
+			$clean_filters[] = array(
+				'col'   => $col,
+				'op'    => $op,
+				'value' => $val,
+			);
+		}
+	}
+
 	$log      = array();
 	$inserted = 0;
 	$updated  = 0;
@@ -1245,6 +1477,29 @@ function tsi_ajax_import_batch() {
 
 	foreach ( $rows as $i => $row ) {
 		$row_num = $offset + $i + 2; // +2: header is row 1, data starts at row 2.
+
+		/* Conditional row filtering — skip rows that don't match all rules */
+		if ( ! empty( $clean_filters ) ) {
+			$pass = tsi_row_matches_filters( $row, $clean_filters );
+
+			/**
+			 * Filter whether a row passes the import filter rules.
+			 *
+			 * @param bool  $pass    Whether the row passed.
+			 * @param array $row     CSV row values.
+			 * @param array $filters The filter rules.
+			 * @param int   $row_num Row number.
+			 */
+			$pass = apply_filters( 'tsi_import_row_filter', $pass, $row, $clean_filters, $row_num );
+
+			if ( ! $pass ) {
+				$skipped++;
+				/* translators: %d: row number */
+				$log[] = sprintf( __( 'Row %d: Filtered — did not match filter rules.', 'the-simplest-importer' ), $row_num );
+				continue;
+			}
+		}
+
 		$result  = tsi_import_single_row( $row, $row_num, $post_type, $clean_map, $dry_run, $dup_field, $dup_meta, $transforms );
 
 		$log[] = $result['message'];
@@ -1280,6 +1535,22 @@ function tsi_ajax_import_batch() {
 			}
 			tsi_record_import_history( $history_id, $post_type, $import_mode, $inserted, $updated, $skipped, $errors, $post_ids );
 		}
+
+		/**
+		 * Fires when a full import is complete (last batch).
+		 *
+		 * @param string $post_type The imported post type.
+		 * @param array  $stats     { inserted, updated, skipped, errors, post_ids, dry_run, history_id }
+		 */
+		do_action( 'tsi_import_completed', $post_type, array(
+			'inserted'   => $inserted,
+			'updated'    => $updated,
+			'skipped'    => $skipped,
+			'errors'     => $errors,
+			'post_ids'   => $post_ids,
+			'dry_run'    => $dry_run,
+			'history_id' => $history_id,
+		) );
 	}
 
 	wp_send_json_success( array(
@@ -1358,6 +1629,16 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	$tax_data  = array();
 	$thumb_url = '';
 
+	/**
+	 * Fires before a single CSV row is imported.
+	 *
+	 * @param array  $row       Original CSV row values.
+	 * @param int    $row_num   Row number in the CSV.
+	 * @param string $post_type Target post type.
+	 * @param array  $mapping   Sanitized mapping array.
+	 */
+	do_action( 'tsi_before_import_row', $row, $row_num, $post_type, $mapping );
+
 	foreach ( $mapping as $field => $info ) {
 		$value = ( 'custom' === $info['source'] )
 			? $info['value']
@@ -1402,6 +1683,27 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			$meta_data[ $meta_key ] = sanitize_text_field( $value );
 		}
 	}
+
+	/**
+	 * Filter the row data array before inserting or updating a post.
+	 *
+	 * @param array  $post_data Post data for wp_insert_post / wp_update_post.
+	 * @param array  $meta_data Meta key => value pairs.
+	 * @param array  $tax_data  Taxonomy slug => terms pairs.
+	 * @param array  $row       Original CSV row values.
+	 * @param int    $row_num   Row number in the CSV.
+	 */
+	$import_row_data = apply_filters( 'tsi_import_row_data', array(
+		'post_data' => $post_data,
+		'meta_data' => $meta_data,
+		'tax_data'  => $tax_data,
+		'thumb_url' => $thumb_url,
+	), $row, $row_num, $post_type );
+
+	$post_data = $import_row_data['post_data'];
+	$meta_data = $import_row_data['meta_data'];
+	$tax_data  = $import_row_data['tax_data'];
+	$thumb_url = $import_row_data['thumb_url'];
 
 	/* Determine insert vs. update */
 	$is_update = false;
@@ -1468,6 +1770,17 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	$post_id = $result;
 
 	foreach ( $meta_data as $key => $val ) {
+		/*
+		 * Use ACF's update_field() when available for ACF-registered fields.
+		 * This ensures proper storage for ACF field types (select, true_false, etc.).
+		 */
+		if ( function_exists( 'acf_get_field' ) && function_exists( 'update_field' ) ) {
+			$acf_field = acf_get_field( $key );
+			if ( $acf_field ) {
+				update_field( $key, $val, $post_id );
+				continue;
+			}
+		}
 		update_post_meta( $post_id, $key, $val );
 	}
 
@@ -1634,6 +1947,69 @@ function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_d
 	}
 
 	return 0;
+}
+
+/* ------------------------------------------------------------------
+ * Helper — Row filter evaluation
+ * ------------------------------------------------------------------ */
+
+/**
+ * Check if a CSV row matches all filter rules (AND logic).
+ *
+ * @param array $row     The CSV row values.
+ * @param array $filters Array of filter rules { col, op, value }.
+ * @return bool True if the row matches all rules.
+ */
+function tsi_row_matches_filters( $row, $filters ) {
+	foreach ( $filters as $rule ) {
+		$cell = isset( $row[ $rule['col'] ] ) ? trim( (string) $row[ $rule['col'] ] ) : '';
+		$val  = $rule['value'];
+
+		switch ( $rule['op'] ) {
+			case 'equals':
+				if ( $cell !== $val ) {
+					return false;
+				}
+				break;
+			case 'not_equals':
+				if ( $cell === $val ) {
+					return false;
+				}
+				break;
+			case 'contains':
+				if ( false === stripos( $cell, $val ) ) {
+					return false;
+				}
+				break;
+			case 'not_contains':
+				if ( false !== stripos( $cell, $val ) ) {
+					return false;
+				}
+				break;
+			case 'gt':
+				if ( (float) $cell <= (float) $val ) {
+					return false;
+				}
+				break;
+			case 'lt':
+				if ( (float) $cell >= (float) $val ) {
+					return false;
+				}
+				break;
+			case 'empty':
+				if ( '' !== $cell ) {
+					return false;
+				}
+				break;
+			case 'not_empty':
+				if ( '' === $cell ) {
+					return false;
+				}
+				break;
+		}
+	}
+
+	return true;
 }
 
 /* ------------------------------------------------------------------
@@ -1981,6 +2357,7 @@ function tsi_ajax_add_schedule() {
 	$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 	$frequency = isset( $_POST['frequency'] ) ? sanitize_key( wp_unslash( $_POST['frequency'] ) ) : 'daily';
 	$profile   = isset( $_POST['profile_id'] ) ? sanitize_key( wp_unslash( $_POST['profile_id'] ) ) : '';
+	$email     = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
 	if ( ! $name || ! $url || ! $post_type ) {
 		wp_send_json_error( esc_html__( 'Name, URL, and post type are required.', 'the-simplest-importer' ) );
@@ -2001,6 +2378,7 @@ function tsi_ajax_add_schedule() {
 		'post_type' => $post_type,
 		'frequency' => $frequency,
 		'profile'   => $profile,
+		'email'     => $email,
 		'created'   => current_time( 'mysql' ),
 		'last_run'  => '',
 		'status'    => 'active',
@@ -2064,6 +2442,23 @@ add_action( 'wp_ajax_tsi_delete_schedule', 'tsi_ajax_delete_schedule' );
  * ------------------------------------------------------------------ */
 
 /**
+ * Send an email notification for a scheduled import if an email is configured.
+ *
+ * @param array  $schedule The schedule config array.
+ * @param string $body     The email body text.
+ */
+function tsi_send_schedule_email( $schedule, $body ) {
+	$email = ! empty( $schedule['email'] ) ? $schedule['email'] : '';
+	if ( ! $email || ! is_email( $email ) ) {
+		return;
+	}
+
+	/* translators: %s: schedule name */
+	$subject = sprintf( esc_html__( '[%s] Scheduled Import Report', 'the-simplest-importer' ), $schedule['name'] );
+	wp_mail( $email, $subject, $body );
+}
+
+/**
  * Execute a scheduled import via WP-Cron.
  *
  * @param string $schedule_id The schedule ID.
@@ -2078,43 +2473,51 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$post_type = $schedule['post_type'];
 	$url       = $schedule['url'];
 
+	/* Auto-convert Google Sheets URL */
+	$url = tsi_convert_google_sheets_url( $url );
+
 	/* Fetch CSV from URL */
 	$response = wp_remote_get( $url, array( 'timeout' => 60 ) );
 	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'error';
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to fetch CSV from URL.', 'the-simplest-importer' ) );
 		return;
 	}
 
 	$body = wp_remote_retrieve_body( $response );
-	$rows = array();
-	$headers = array();
 
-	$lines = explode( "\n", $body );
-	$lines = array_filter( $lines, 'strlen' );
+	/* Write to temp file so we can reuse tsi_read_csv_file() with delimiter auto-detection. */
+	$tmp = wp_tempnam( 'tsi_sched_' );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for CSV parsing.
+	file_put_contents( $tmp, $body );
 
-	if ( empty( $lines ) ) {
+	$parsed = tsi_read_csv_file( $tmp );
+	wp_delete_file( $tmp );
+
+	if ( is_string( $parsed ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
-		$schedules[ $schedule_id ]['last_status'] = 'empty';
+		$schedules[ $schedule_id ]['last_status'] = 'error';
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to parse CSV data.', 'the-simplest-importer' ) );
 		return;
 	}
 
-	$headers = str_getcsv( array_shift( $lines ) );
-	foreach ( $lines as $line ) {
-		$row = str_getcsv( $line );
-		if ( count( $row ) === count( $headers ) ) {
-			$rows[] = $row;
-		}
-	}
+	$headers = $parsed['headers'];
+	$csv_token = $parsed['token'];
 
-	if ( empty( $rows ) ) {
+	/* Retrieve rows from transient */
+	$csv_data = get_transient( 'tsi_csv_data_' . $csv_token );
+	if ( ! $csv_data || empty( $csv_data['rows'] ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'empty';
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+		tsi_send_schedule_email( $schedule, esc_html__( 'CSV file was empty or contained no data rows.', 'the-simplest-importer' ) );
 		return;
 	}
+
+	$rows = $csv_data['rows'];
 
 	/* Build mapping from profile or auto-match */
 	$mapping = array();
@@ -2146,6 +2549,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'no_mapping';
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+		tsi_send_schedule_email( $schedule, esc_html__( 'No column mapping could be determined.', 'the-simplest-importer' ) );
 		return;
 	}
 
@@ -2174,11 +2578,30 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$history_id = 'sched-' . $schedule_id . '-' . time();
 	tsi_record_import_history( $history_id, $post_type, 'scheduled', $inserted, $updated, 0, $errors, $post_ids );
 
+	/* Clean up CSV transient */
+	delete_transient( 'tsi_csv_data_' . $csv_token );
+
 	/* Update schedule status */
 	$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 	$schedules[ $schedule_id ]['last_status'] = 'success';
 	$schedules[ $schedule_id ]['last_count']  = $inserted + $updated;
 	update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+
+	/* Send email notification if configured */
+	$lines = array();
+	/* translators: %s: schedule name */
+	$lines[] = sprintf( esc_html__( 'Schedule: %s', 'the-simplest-importer' ), $schedule['name'] );
+	/* translators: %s: post type slug */
+	$lines[] = sprintf( esc_html__( 'Post type: %s', 'the-simplest-importer' ), $post_type );
+	/* translators: %d: number of inserted posts */
+	$lines[] = sprintf( esc_html__( 'Inserted: %d', 'the-simplest-importer' ), $inserted );
+	/* translators: %d: number of updated posts */
+	$lines[] = sprintf( esc_html__( 'Updated: %d', 'the-simplest-importer' ), $updated );
+	/* translators: %d: number of errors */
+	$lines[] = sprintf( esc_html__( 'Errors: %d', 'the-simplest-importer' ), $errors );
+	/* translators: %s: date and time */
+	$lines[] = sprintf( esc_html__( 'Completed at: %s', 'the-simplest-importer' ), current_time( 'mysql' ) );
+	tsi_send_schedule_email( $schedule, implode( "\n", $lines ) );
 }
 add_action( 'tsi_scheduled_import', 'tsi_run_scheduled_import' );
 
@@ -2202,3 +2625,411 @@ function tsi_add_cron_interval( $schedules ) {
 	return $schedules;
 }
 add_filter( 'cron_schedules', 'tsi_add_cron_interval' );
+
+/* ------------------------------------------------------------------
+ * Helper — Scheduled exports CRUD
+ * ------------------------------------------------------------------ */
+
+/**
+ * Get export schedules list.
+ *
+ * @return array
+ */
+function tsi_get_export_schedules() {
+	return get_option( TSI_EXPORT_SCHEDULES_OPTION, array() );
+}
+
+/* ------------------------------------------------------------------
+ * AJAX — Add scheduled export
+ * ------------------------------------------------------------------ */
+
+/**
+ * Save a new scheduled export.
+ */
+function tsi_ajax_add_export_schedule() {
+	check_ajax_referer( 'tsi_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+	}
+
+	$name      = isset( $_POST['schedule_name'] ) ? sanitize_text_field( wp_unslash( $_POST['schedule_name'] ) ) : '';
+	$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
+	$frequency = isset( $_POST['frequency'] ) ? sanitize_key( wp_unslash( $_POST['frequency'] ) ) : 'weekly';
+	$email     = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+
+	if ( ! $name || ! $post_type ) {
+		wp_send_json_error( esc_html__( 'Name and post type are required.', 'the-simplest-importer' ) );
+	}
+
+	$allowed_freq = array( 'hourly', 'twicedaily', 'daily', 'weekly' );
+	if ( ! in_array( $frequency, $allowed_freq, true ) ) {
+		$frequency = 'weekly';
+	}
+
+	$export_schedules = tsi_get_export_schedules();
+	$id               = wp_generate_password( 8, false );
+
+	$export_schedules[ $id ] = array(
+		'id'        => $id,
+		'name'      => $name,
+		'post_type' => $post_type,
+		'frequency' => $frequency,
+		'email'     => $email,
+		'created'   => current_time( 'mysql' ),
+		'last_run'  => '',
+		'status'    => 'active',
+	);
+
+	update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+
+	/* Schedule the cron event */
+	if ( ! wp_next_scheduled( 'tsi_scheduled_export', array( $id ) ) ) {
+		wp_schedule_event( time(), $frequency, 'tsi_scheduled_export', array( $id ) );
+	}
+
+	wp_send_json_success( array(
+		'export_schedules' => $export_schedules,
+		/* translators: %s: schedule name */
+		'message'          => sprintf( esc_html__( 'Export schedule "%s" created.', 'the-simplest-importer' ), $name ),
+	) );
+}
+add_action( 'wp_ajax_tsi_add_export_schedule', 'tsi_ajax_add_export_schedule' );
+
+/* ------------------------------------------------------------------
+ * AJAX — Delete scheduled export
+ * ------------------------------------------------------------------ */
+
+/**
+ * Delete a scheduled export.
+ */
+function tsi_ajax_delete_export_schedule() {
+	check_ajax_referer( 'tsi_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+	}
+
+	$id = isset( $_POST['schedule_id'] ) ? sanitize_key( wp_unslash( $_POST['schedule_id'] ) ) : '';
+	if ( ! $id ) {
+		wp_send_json_error( esc_html__( 'Missing schedule ID.', 'the-simplest-importer' ) );
+	}
+
+	$export_schedules = tsi_get_export_schedules();
+	if ( isset( $export_schedules[ $id ] ) ) {
+		unset( $export_schedules[ $id ] );
+		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+
+		/* Remove the cron event */
+		$timestamp = wp_next_scheduled( 'tsi_scheduled_export', array( $id ) );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, 'tsi_scheduled_export', array( $id ) );
+		}
+	}
+
+	wp_send_json_success( array(
+		'export_schedules' => $export_schedules,
+		'message'          => esc_html__( 'Export schedule deleted.', 'the-simplest-importer' ),
+	) );
+}
+add_action( 'wp_ajax_tsi_delete_export_schedule', 'tsi_ajax_delete_export_schedule' );
+
+/* ------------------------------------------------------------------
+ * WP-Cron — Execute scheduled export
+ * ------------------------------------------------------------------ */
+
+/**
+ * Execute a scheduled export via WP-Cron.
+ *
+ * @param string $schedule_id The export schedule ID.
+ */
+function tsi_run_scheduled_export( $schedule_id ) {
+	$export_schedules = tsi_get_export_schedules();
+	if ( ! isset( $export_schedules[ $schedule_id ] ) ) {
+		return;
+	}
+
+	$schedule  = $export_schedules[ $schedule_id ];
+	$post_type = $schedule['post_type'];
+
+	if ( ! post_type_exists( $post_type ) ) {
+		$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
+		$export_schedules[ $schedule_id ]['last_status'] = 'error';
+		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+		return;
+	}
+
+	$posts = get_posts( array(
+		'post_type'      => $post_type,
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'orderby'        => 'ID',
+		'order'          => 'ASC',
+	) );
+
+	if ( empty( $posts ) ) {
+		$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
+		$export_schedules[ $schedule_id ]['last_status'] = 'empty';
+		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+		return;
+	}
+
+	$fields    = tsi_get_post_type_fields( $post_type );
+	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author' );
+
+	$meta_fields = array();
+	$tax_fields  = array();
+	foreach ( $fields as $key => $label ) {
+		if ( 0 === strpos( $key, 'meta__' ) ) {
+			$meta_fields[] = substr( $key, 6 );
+		} elseif ( 0 === strpos( $key, 'tax__' ) ) {
+			$tax_fields[] = substr( $key, 5 );
+		}
+	}
+
+	$header = $core_keys;
+	foreach ( $tax_fields as $t ) {
+		$header[] = 'tax__' . $t;
+	}
+	foreach ( $meta_fields as $m ) {
+		$header[] = 'meta__' . $m;
+	}
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Using php://temp for in-memory CSV generation.
+	$output = fopen( 'php://temp', 'r+' );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writing UTF-8 BOM to in-memory stream.
+	fwrite( $output, "\xEF\xBB\xBF" );
+	fputcsv( $output, $header );
+
+	foreach ( $posts as $p ) {
+		$row = array();
+		foreach ( $core_keys as $ck ) {
+			$row[] = isset( $p->$ck ) ? $p->$ck : '';
+		}
+		foreach ( $tax_fields as $t ) {
+			$terms = wp_get_object_terms( $p->ID, $t, array( 'fields' => 'names' ) );
+			$row[] = is_array( $terms ) ? implode( ', ', $terms ) : '';
+		}
+		foreach ( $meta_fields as $m ) {
+			$val   = get_post_meta( $p->ID, $m, true );
+			$row[] = is_array( $val ) ? wp_json_encode( $val ) : ( isset( $val ) ? (string) $val : '' );
+		}
+		fputcsv( $output, $row );
+	}
+
+	rewind( $output );
+	$csv_string = stream_get_contents( $output );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://temp in-memory stream.
+	fclose( $output );
+
+	/* Ensure export directory exists */
+	$upload_dir  = wp_upload_dir();
+	$export_dir  = $upload_dir['basedir'] . '/tsi-exports';
+
+	if ( ! file_exists( $export_dir ) ) {
+		wp_mkdir_p( $export_dir );
+
+		/* Protect directory from direct browsing */
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing security files to export directory.
+		file_put_contents( $export_dir . '/index.php', "<?php\n// Silence is golden.\n" );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing .htaccess to protect export directory.
+		file_put_contents( $export_dir . '/.htaccess', "Options -Indexes\nDeny from all\n" );
+	}
+
+	/* Write the CSV file */
+	$filename = sanitize_file_name( $post_type . '-export-' . gmdate( 'Y-m-d-His' ) . '.csv' );
+	$filepath = $export_dir . '/' . $filename;
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing scheduled export CSV to disk.
+	file_put_contents( $filepath, $csv_string );
+
+	/* Auto-clean exports older than 7 days */
+	tsi_cleanup_old_exports( $export_dir );
+
+	/* Update schedule status */
+	$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
+	$export_schedules[ $schedule_id ]['last_status'] = 'success';
+	/* translators: %d: number of posts exported */
+	$export_schedules[ $schedule_id ]['last_count']  = count( $posts );
+	update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+
+	/* Send email notification if configured */
+	$email = ! empty( $schedule['email'] ) ? $schedule['email'] : '';
+	if ( $email && is_email( $email ) ) {
+		/* translators: %s: schedule name */
+		$subject = sprintf( esc_html__( '[%s] Scheduled Export Complete', 'the-simplest-importer' ), $schedule['name'] );
+
+		$lines = array();
+		/* translators: %s: schedule name */
+		$lines[] = sprintf( esc_html__( 'Schedule: %s', 'the-simplest-importer' ), $schedule['name'] );
+		/* translators: %s: post type slug */
+		$lines[] = sprintf( esc_html__( 'Post type: %s', 'the-simplest-importer' ), $post_type );
+		/* translators: %d: number of posts exported */
+		$lines[] = sprintf( esc_html__( 'Posts exported: %d', 'the-simplest-importer' ), count( $posts ) );
+		/* translators: %s: date and time */
+		$lines[] = sprintf( esc_html__( 'Completed at: %s', 'the-simplest-importer' ), current_time( 'mysql' ) );
+		$lines[] = esc_html__( 'The CSV file is attached to this email.', 'the-simplest-importer' );
+
+		wp_mail( $email, $subject, implode( "\n", $lines ), '', array( $filepath ) );
+	}
+}
+add_action( 'tsi_scheduled_export', 'tsi_run_scheduled_export' );
+
+/**
+ * Remove exported CSV files older than 7 days.
+ *
+ * @param string $directory The export directory path.
+ */
+function tsi_cleanup_old_exports( $directory ) {
+	$files = glob( $directory . '/*.csv' );
+	if ( ! is_array( $files ) ) {
+		return;
+	}
+	$threshold = time() - ( 7 * DAY_IN_SECONDS );
+	foreach ( $files as $file ) {
+		if ( filemtime( $file ) < $threshold ) {
+			wp_delete_file( $file );
+		}
+	}
+}
+
+/* ------------------------------------------------------------------
+ * Meta Box — Export single post from edit screen
+ * ------------------------------------------------------------------ */
+
+/**
+ * Register the TSI meta box on all post types with show_ui.
+ */
+function tsi_register_meta_box() {
+	$post_types = get_post_types( array( 'show_ui' => true ), 'names' );
+	foreach ( $post_types as $pt ) {
+		add_meta_box(
+			'tsi-single-export',
+			esc_html__( 'The Simplest Importer', 'the-simplest-importer' ),
+			'tsi_render_meta_box',
+			$pt,
+			'side',
+			'low'
+		);
+	}
+}
+add_action( 'add_meta_boxes', 'tsi_register_meta_box' );
+
+/**
+ * Render the meta box content.
+ *
+ * @param WP_Post $post The current post object.
+ */
+function tsi_render_meta_box( $post ) {
+	wp_nonce_field( 'tsi_nonce', 'tsi_meta_box_nonce' );
+	?>
+	<p class="description"><?php esc_html_e( 'Export this post as a CSV file.', 'the-simplest-importer' ); ?></p>
+	<button type="button" class="button button-small" id="tsi-export-single" data-post-id="<?php echo esc_attr( $post->ID ); ?>"><?php esc_html_e( 'Download CSV', 'the-simplest-importer' ); ?></button>
+	<script>
+	(function () {
+		document.getElementById('tsi-export-single').addEventListener('click', function () {
+			var postId = this.getAttribute('data-post-id');
+			var nonce  = document.getElementById('tsi_meta_box_nonce').value;
+			var data   = new FormData();
+			data.append('action', 'tsi_export_single_post');
+			data.append('nonce', nonce);
+			data.append('post_id', postId);
+			fetch(ajaxurl, { method: 'POST', body: data, credentials: 'same-origin' })
+				.then(function (r) { return r.json(); })
+				.then(function (res) {
+					if (!res.success) {
+						window.alert(res.data || 'Export failed.');
+						return;
+					}
+					var raw = atob(res.data.csv);
+					var bytes = new Uint8Array(raw.length);
+					for (var i = 0; i < raw.length; i++) { bytes[i] = raw.charCodeAt(i); }
+					var blob = new Blob([bytes], { type: 'text/csv;charset=utf-8' });
+					var url  = URL.createObjectURL(blob);
+					var a    = document.createElement('a');
+					a.href = url;
+					a.download = res.data.filename;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					URL.revokeObjectURL(url);
+				});
+		});
+	})();
+	</script>
+	<?php
+}
+
+/**
+ * AJAX handler — export a single post as CSV.
+ */
+function tsi_ajax_export_single_post() {
+	check_ajax_referer( 'tsi_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+	}
+
+	$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+	if ( ! $post_id ) {
+		wp_send_json_error( esc_html__( 'Invalid post ID.', 'the-simplest-importer' ) );
+	}
+
+	$post = get_post( $post_id );
+	if ( ! $post ) {
+		wp_send_json_error( esc_html__( 'Post not found.', 'the-simplest-importer' ) );
+	}
+
+	$post_type = $post->post_type;
+	$fields    = tsi_get_post_type_fields( $post_type );
+	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author' );
+
+	$meta_fields = array();
+	$tax_fields  = array();
+	foreach ( $fields as $key => $label ) {
+		if ( 0 === strpos( $key, 'meta__' ) ) {
+			$meta_fields[] = substr( $key, 6 );
+		} elseif ( 0 === strpos( $key, 'tax__' ) ) {
+			$tax_fields[] = substr( $key, 5 );
+		}
+	}
+
+	$header = $core_keys;
+	foreach ( $tax_fields as $t ) {
+		$header[] = 'tax__' . $t;
+	}
+	foreach ( $meta_fields as $m ) {
+		$header[] = 'meta__' . $m;
+	}
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Using php://temp for in-memory CSV generation.
+	$output = fopen( 'php://temp', 'r+' );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writing UTF-8 BOM to in-memory stream.
+	fwrite( $output, "\xEF\xBB\xBF" );
+	fputcsv( $output, $header );
+
+	$row = array();
+	foreach ( $core_keys as $ck ) {
+		$row[] = isset( $post->$ck ) ? $post->$ck : '';
+	}
+	foreach ( $tax_fields as $t ) {
+		$terms = wp_get_object_terms( $post->ID, $t, array( 'fields' => 'names' ) );
+		$row[] = is_array( $terms ) ? implode( ', ', $terms ) : '';
+	}
+	foreach ( $meta_fields as $m ) {
+		$val   = get_post_meta( $post->ID, $m, true );
+		$row[] = is_array( $val ) ? wp_json_encode( $val ) : ( isset( $val ) ? (string) $val : '' );
+	}
+	fputcsv( $output, $row );
+
+	rewind( $output );
+	$csv_string = stream_get_contents( $output );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://temp in-memory stream.
+	fclose( $output );
+
+	wp_send_json_success( array(
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Base64 needed to transport CSV binary through JSON.
+		'csv'      => base64_encode( $csv_string ),
+		'filename' => sanitize_file_name( $post_type . '-' . $post_id . '-export.csv' ),
+	) );
+}
+add_action( 'wp_ajax_tsi_export_single_post', 'tsi_ajax_export_single_post' );

@@ -3,7 +3,7 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -43,6 +43,14 @@ Import, export, and manage WordPress posts and custom post types via CSV with vi
 * **Delimiter Auto-detection** — Handles comma, semicolon, tab, and pipe delimiters automatically.
 * **Selective Column Export** — Choose which fields to include in your export.
 * **Status Filter Export** — Filter exported posts by publish status.
+* **ACF Support** — Auto-detects Advanced Custom Fields and uses `update_field()` for proper ACF data handling.
+* **SEO Meta Support** — Auto-detects Yoast SEO and Rank Math, adding SEO Title, Description, and Focus Keyword fields to import/export.
+* **Google Sheets Import** — Paste a Google Sheets URL and it's automatically converted for CSV download.
+* **Conditional Row Filtering** — Define rules to skip rows during import based on column values (equals, contains, greater than, etc.).
+* **Email Notifications** — Receive email reports when scheduled imports complete (success or failure).
+* **Scheduled Exports** — Set up recurring WP-Cron exports with files saved to uploads and optionally emailed as attachments.
+* **Single Post Export** — Export any individual post as CSV from its edit screen via a meta box.
+* **Enhanced Developer Hooks** — 8 new filters and actions for CSV parsing, export columns, export rows, import rows, and more.
 
 **Supported Post Types:**
 
@@ -100,6 +108,19 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 
 == Changelog ==
 
+= 1.2.0 =
+* Added: ACF support — auto-detects Advanced Custom Fields, uses `update_field()` for proper data handling.
+* Added: SEO meta support — auto-detects Yoast SEO and Rank Math, adds SEO title/description/focus keyword fields.
+* Added: Google Sheets import — automatically converts Google Sheets URLs to CSV download links.
+* Added: Conditional row filtering — skip rows during import based on column value rules (8 operators).
+* Added: Email notifications — receive reports when scheduled imports complete or fail.
+* Added: Scheduled exports — recurring WP-Cron exports saved to uploads with optional email attachment.
+* Added: Single post export — meta box on post edit screens for exporting individual posts as CSV.
+* Added: 8 new developer hooks: `tsi_csv_parsed`, `tsi_export_columns`, `tsi_export_row`, `tsi_export_completed`, `tsi_before_import_row`, `tsi_import_row_data`, `tsi_import_completed`, `tsi_import_row_filter`.
+* Fixed: "Proceed with Import" button after CSV validation was not functional.
+* Fixed: Scheduled imports failed on semicolon/tab/pipe-delimited CSV files.
+* Fixed: Misleading "WordPress Users" reference in admin UI replaced with accurate description.
+
 = 1.1.0 =
 * Added: Scheduled imports — WP-Cron based recurring imports from URL (hourly, twice daily, daily, weekly).
 * Added: Import history — records last 50 imports with post IDs, supports rollback to trash.
@@ -133,6 +154,9 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 * Developer hooks: `tsi_post_types`, `tsi_post_type_fields`, `tsi_import_batch_size`, `tsi_after_import_row`.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+New: ACF & SEO meta support, Google Sheets import, conditional row filtering, scheduled exports, email notifications, and single post export meta box.
 
 = 1.0.0 =
 Initial release.

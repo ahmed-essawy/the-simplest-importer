@@ -4,7 +4,7 @@
 
 WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV. Single-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
 
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 - **License**: GPL-2.0-or-later
 - **Requires**: WordPress 5.8+, PHP 7.4+
 - **Tested up to**: WordPress 6.9
@@ -118,9 +118,17 @@ Filters:
 - `tsi_post_types` — modify the post type list shown in dropdown
 - `tsi_post_type_fields` — modify importable fields for a post type
 - `tsi_import_batch_size` — change batch size (default: 50)
+- `tsi_csv_parsed` — filter parsed CSV data before transient storage (v1.2.0)
+- `tsi_export_columns` — filter export column list (v1.2.0)
+- `tsi_export_row` — filter each export row before writing (v1.2.0)
+- `tsi_import_row_data` — filter post/meta/tax data before insert/update (v1.2.0)
+- `tsi_import_row_filter` — custom row filter logic during import (v1.2.0)
 
 Actions:
 - `tsi_after_import_row` — fires after each row import with `$post_id`, `$row`, `$row_num`, `$is_update`
+- `tsi_before_import_row` — fires before each row import (v1.2.0)
+- `tsi_export_completed` — fires after export finishes (v1.2.0)
+- `tsi_import_completed` — fires after batch import finishes all rows (v1.2.0)
 
 ## v1.1.0 Features
 
@@ -140,12 +148,12 @@ Actions:
 14. **Sticky Post Type** — Remembers last selected post type via localStorage
 15. **Export Row Count** — Shows post count in the export button
 
-### New Constants
+### New Constants (v1.1.0)
 - `TSI_HISTORY_OPTION` — wp_options key for import history
 - `TSI_PROFILES_OPTION` — wp_options key for mapping profiles
 - `TSI_SCHEDULES_OPTION` — wp_options key for scheduled imports
 
-### New AJAX Handlers
+### New AJAX Handlers (v1.1.0)
 - `tsi_save_profile` — Save a mapping profile
 - `tsi_delete_profile` — Delete a mapping profile
 - `tsi_validate_csv` — Validate CSV data before import
@@ -154,7 +162,7 @@ Actions:
 - `tsi_add_schedule` — Create a scheduled import
 - `tsi_delete_schedule` — Remove a scheduled import
 
-### New Helper Functions
+### New Helper Functions (v1.1.0)
 - `tsi_apply_transform()` — Apply named transform to a field value
 - `tsi_check_duplicate()` — Check for duplicate posts by field
 - `tsi_record_import_history()` — Save import to history
@@ -163,6 +171,36 @@ Actions:
 - `tsi_get_scheduled_imports()` — Retrieve scheduled imports
 - `tsi_run_scheduled_import()` — WP-Cron callback for scheduled imports
 - `tsi_add_cron_interval()` — Registers weekly cron schedule
+
+## v1.2.0 Features
+
+1. **ACF Support** — Auto-detects Advanced Custom Fields groups per post type, shows friendly field labels, uses `update_field()` during import
+2. **SEO Meta Support** — Auto-detects Yoast SEO (`WPSEO_VERSION`) and Rank Math (`RANK_MATH_VERSION`/`RankMath` class), adds SEO Title, Description, and Focus Keyword fields
+3. **Google Sheets Import** — `tsi_convert_google_sheets_url()` auto-converts `/d/{ID}/edit` and `/d/e/{PUBID}/pub` URLs to CSV export links, works in both manual URL fetch and scheduled imports
+4. **Conditional Row Filtering** — Filter builder UI in mapping step with 8 operators (equals, not_equals, contains, not_contains, gt, lt, empty, not_empty), AND logic, `tsi_import_row_filter` hook
+5. **Scheduled Exports** — WP-Cron recurring exports saved to `wp-content/uploads/tsi-exports/` with `.htaccess` protection, auto-cleanup after 7 days, optional email attachment
+6. **Email Notifications** — Scheduled imports send email reports on success or failure via `tsi_send_schedule_email()`, exports attach the CSV file
+7. **Single Post Export** — Meta box on all post type edit screens with "Download CSV" button, uses `tsi_ajax_export_single_post()` AJAX handler
+8. **Enhanced Developer Hooks** — 8 new hooks: `tsi_csv_parsed`, `tsi_export_columns`, `tsi_export_row`, `tsi_export_completed`, `tsi_before_import_row`, `tsi_import_row_data`, `tsi_import_completed`, `tsi_import_row_filter`
+
+### New Constants (v1.2.0)
+- `TSI_EXPORT_SCHEDULES_OPTION` — wp_options key for scheduled exports
+
+### New AJAX Handlers (v1.2.0)
+- `tsi_add_export_schedule` — Create a scheduled export
+- `tsi_delete_export_schedule` — Delete a scheduled export
+- `tsi_export_single_post` — Export a single post as CSV from edit screen
+
+### New Helper Functions (v1.2.0)
+- `tsi_convert_google_sheets_url()` — Convert Google Sheets URLs to CSV export URLs
+- `tsi_row_matches_filters()` — Evaluate conditional filter rules against a CSV row
+- `tsi_send_schedule_email()` — Send email notification for a scheduled import
+- `tsi_get_export_schedules()` — Retrieve scheduled exports list
+- `tsi_run_scheduled_export()` — WP-Cron callback for scheduled exports
+- `tsi_cleanup_old_exports()` — Remove export CSV files older than 7 days
+- `tsi_register_meta_box()` — Register single post export meta box
+- `tsi_render_meta_box()` — Render meta box with download button
+- `tsi_ajax_export_single_post()` — AJAX handler for single post CSV export
 
 ## Coding Standards
 
@@ -213,10 +251,10 @@ Three places must stay in sync on every release:
 
 **No custom tables.** Uses only:
 - WordPress transients for temporary CSV data storage (`tsi_csv_data_{token}`)
-- `wp_options` for import history (`tsi_import_history`), mapping profiles (`tsi_mapping_profiles`), and scheduled imports (`tsi_scheduled_imports`)
+- `wp_options` for import history (`tsi_import_history`), mapping profiles (`tsi_mapping_profiles`), scheduled imports (`tsi_scheduled_imports`), and scheduled exports (`tsi_scheduled_exports`)
 - Standard `wp_posts`, `wp_postmeta`, `wp_terms` via WordPress APIs
 
-`uninstall.php` cleans up all `tsi_csv_data_*` transients via direct `$wpdb` query, plus `tsi_import_history`, `tsi_mapping_profiles`, `tsi_scheduled_imports` options and their associated cron events.
+`uninstall.php` cleans up all `tsi_csv_data_*` transients via direct `$wpdb` query, plus `tsi_import_history`, `tsi_mapping_profiles`, `tsi_scheduled_imports`, `tsi_scheduled_exports` options and their associated cron events.
 
 ## Asset Loading
 

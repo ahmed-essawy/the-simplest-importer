@@ -1584,3 +1584,71 @@
 	flex-wrap: wrap;
 	gap: 4px 12px;
 }
+
+/* ------------------------------------------------------------------
+ * Conditional Row Filters
+ * ------------------------------------------------------------------ */
+
+.tsi-filter-section {
+	margin: 12px 0;
+	padding: 12px 16px;
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.tsi-filter-section h4 {
+	margin: 0 0 4px;
+	font-size: 14px;
+}
+
+.tsi-filter-section > .description {
+	margin: 0 0 8px;
+}
+
+.tsi-filter-rule {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.tsi-filter-rule select {
+	min-width: 120px;
+	font-size: 12px;
+}
+
+.tsi-filter-rule .tsi-filter-value {
+	min-width: 100px;
+}
+
+.tsi-remove-filter {
+	padding: 2px 6px !important;
+	min-height: 0 !important;
+	line-height: 1 !important;
+}
+
+.tsi-remove-filter .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: middle;
+	color: #d63638;
+}
+
+#tsi-add-filter {
+	margin-top: 4px;
+}
+
+@media screen and (max-width: 480px) {
+	.tsi-filter-rule {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.tsi-filter-rule select,
+	.tsi-filter-rule input {
+		width: 100%;
+	}
+}

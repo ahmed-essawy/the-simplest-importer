@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - Unreleased
+
+### Added
+- ACF support — auto-detects Advanced Custom Fields and uses `update_field()` for proper data handling during import.
+- SEO meta support — auto-detects Yoast SEO and Rank Math, adds SEO Title, Description, and Focus Keyword fields.
+- Google Sheets import — automatically converts Google Sheets URLs to CSV download links (both edit and published formats).
+- Conditional row filtering — define rules to skip rows during import based on column values (equals, not equals, contains, not contains, greater than, less than, empty, not empty).
+- Email notifications — receive email reports when scheduled imports complete or fail.
+- Scheduled exports — recurring WP-Cron exports saved to `wp-content/uploads/tsi-exports/` with optional email attachment. Auto-cleanup after 7 days.
+- Single post export — meta box on post edit screens for exporting individual posts as CSV.
+- New developer hooks: `tsi_csv_parsed`, `tsi_export_columns`, `tsi_export_row`, `tsi_export_completed`, `tsi_before_import_row`, `tsi_import_row_data`, `tsi_import_completed`, `tsi_import_row_filter`.
+
+### Fixed
+- "Proceed with Import" button after CSV validation was non-functional (missing JS handler).
+- Scheduled imports failed on semicolon, tab, and pipe-delimited CSV files (now uses delimiter auto-detection).
+- Misleading "plus WordPress Users" text in admin UI replaced with accurate "all registered post types with a UI".
+
 ## [1.1.0] - 2026-03-30
 
 ### Added

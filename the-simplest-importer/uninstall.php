@@ -26,6 +26,9 @@ delete_option( 'tsi_import_history' );
 delete_option( 'tsi_mapping_profiles' );
 delete_option( 'tsi_scheduled_imports' );
 
+/* Clean up plugin options added in v1.2.0 */
+delete_option( 'tsi_scheduled_exports' );
+
 /* Unschedule all cron events for scheduled imports */
 $schedules = get_option( 'tsi_scheduled_imports', array() );
 if ( is_array( $schedules ) ) {
@@ -33,6 +36,17 @@ if ( is_array( $schedules ) ) {
 		$timestamp = wp_next_scheduled( 'tsi_scheduled_import', array( $id ) );
 		if ( $timestamp ) {
 			wp_unschedule_event( $timestamp, 'tsi_scheduled_import', array( $id ) );
+		}
+	}
+}
+
+/* Unschedule all cron events for scheduled exports */
+$export_schedules = get_option( 'tsi_scheduled_exports', array() );
+if ( is_array( $export_schedules ) ) {
+	foreach ( $export_schedules as $id => $schedule ) {
+		$timestamp = wp_next_scheduled( 'tsi_scheduled_export', array( $id ) );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, 'tsi_scheduled_export', array( $id ) );
 		}
 	}
 }

@@ -300,7 +300,9 @@
 	$('#tsi-btn-schedule').on('click', function () {
 		resetFrom('tsi-step-source');
 		loadSchedules();
+		loadExportSchedules();
 		$('#tsi-step-schedule').slideDown(200);
+		$('#tsi-step-export-schedule').slideDown(200);
 		scrollTo('#tsi-step-schedule');
 	});
 
@@ -491,6 +493,11 @@
 			}
 			extraFieldCount = 0;
 			buildMappingTable(res.data);
+			/* Show filter section if CSV headers are available */
+			if (csvHeaders.length) {
+				$('#tsi-filter-section').show();
+				$('#tsi-filter-rules').empty();
+			}
 			$('#tsi-step-mapping').slideDown(200);
 			scrollTo('#tsi-step-mapping');
 		});
@@ -759,10 +766,11 @@
 
 		var totals = { inserted: 0, updated: 0, skipped: 0, errors: 0 };
 		var allLogs = [];
+		var filters = buildFilterPayload();
 		lastHistoryId = '';
 		lastAllLogs   = [];
 
-		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms);
+		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters);
 	});
 
 	/**
@@ -838,7 +846,7 @@
 	/**
 	 * Process one batch, then recurse until done.
 	 */
-	function processBatch(offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms) {
+	function processBatch(offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters) {
 		$.post(tsiImporter.ajax_url, {
 			action:       'tsi_import_batch',
 			nonce:        tsiImporter.nonce,
@@ -852,6 +860,7 @@
 			dup_field:    dupField,
 			dup_meta_key: dupMeta,
 			transforms:   JSON.stringify(transforms),
+			filters:      JSON.stringify(filters || []),
 			history_id:   lastHistoryId
 		}, function (res) {
 			if (!res.success) {
@@ -897,7 +906,7 @@
 			$liveLog.scrollTop($liveLog[0].scrollHeight);
 
 			if (!d.done) {
-				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms);
+				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters);
 			} else {
 				lastAllLogs = allLogs;
 				showResults(totals, allLogs, isDryRun);
@@ -1067,6 +1076,19 @@
 		});
 	});
 
+	/* Proceed with Import after validation */
+	$('#tsi-btn-proceed-import').on('click', function () {
+		$('#tsi-step-validation').slideUp(200);
+		$('#tsi-step-mapping').slideDown(200);
+		scrollTo('#tsi-step-mapping');
+	});
+
+	/* Cancel from validation — hide validation and stay on mapping */
+	$('#tsi-btn-cancel-import').on('click', function () {
+		$('#tsi-step-validation').slideUp(200);
+		scrollTo('#tsi-step-mapping');
+	});
+
 	/* ================================================================
 	 * Duplicate check toggle (#3)
 	 * ================================================================ */
@@ -1078,6 +1100,59 @@
 	$('#tsi-dup-field').on('change', function () {
 		$('#tsi-dup-meta-wrap').toggle($(this).val() === 'meta_key');
 	});
+
+	/* ================================================================
+	 * Conditional Row Filters
+	 * ================================================================ */
+
+	$('#tsi-add-filter').on('click', function () {
+		var $rules = $('#tsi-filter-rules');
+		var idx    = $rules.children().length;
+		var html   = '<div class="tsi-filter-rule" data-idx="' + idx + '">';
+		html      += '<select class="tsi-filter-col">';
+		$.each(csvHeaders, function (i, h) {
+			html += '<option value="' + i + '">' + esc(h) + '</option>';
+		});
+		html += '</select>';
+		html += '<select class="tsi-filter-op">';
+		html += '<option value="equals">equals</option>';
+		html += '<option value="not_equals">not equals</option>';
+		html += '<option value="contains">contains</option>';
+		html += '<option value="not_contains">not contains</option>';
+		html += '<option value="gt">greater than</option>';
+		html += '<option value="lt">less than</option>';
+		html += '<option value="empty">is empty</option>';
+		html += '<option value="not_empty">is not empty</option>';
+		html += '</select>';
+		html += '<input type="text" class="tsi-filter-value small-text" placeholder="value">';
+		html += '<button type="button" class="button button-small tsi-remove-filter"><span class="dashicons dashicons-no-alt"></span></button>';
+		html += '</div>';
+		$rules.append(html);
+	});
+
+	$(document).on('click', '.tsi-remove-filter', function () {
+		$(this).closest('.tsi-filter-rule').remove();
+	});
+
+	$(document).on('change', '.tsi-filter-op', function () {
+		var op = $(this).val();
+		$(this).closest('.tsi-filter-rule').find('.tsi-filter-value').toggle(op !== 'empty' && op !== 'not_empty');
+	});
+
+	/**
+	 * Build the filter rules payload.
+	 */
+	function buildFilterPayload() {
+		var filters = [];
+		$('#tsi-filter-rules .tsi-filter-rule').each(function () {
+			filters.push({
+				col:   parseInt($(this).find('.tsi-filter-col').val(), 10),
+				op:    $(this).find('.tsi-filter-op').val(),
+				value: $(this).find('.tsi-filter-value').val() || ''
+			});
+		});
+		return filters;
+	}
 
 	/* ================================================================
 	 * Mapping Profiles (#6)
@@ -1248,13 +1323,14 @@
 				'<td>' + esc(s.name) + '</td>' +
 				'<td>' + esc(s.post_type) + '</td>' +
 				'<td>' + esc(s.frequency) + '</td>' +
+				'<td>' + esc(s.email || '—') + '</td>' +
 				'<td>' + esc(s.last_run || 'Never') + '</td>' +
 				'<td>' + esc(s.last_status || 'N/A') + '</td>' +
 				'<td><button type="button" class="button button-small tsi-delete-schedule" data-id="' + esc(id) + '">Delete</button></td>' +
 				'</tr>';
 		});
 		if (!html) {
-			html = '<tr><td colspan="6">No scheduled imports.</td></tr>';
+			html = '<tr><td colspan="7">No scheduled imports.</td></tr>';
 		}
 		$('#tsi-schedule-body').html(html);
 
@@ -1267,10 +1343,11 @@
 	}
 
 	$('#tsi-btn-add-schedule').on('click', function () {
-		var name = $('#tsi-schedule-name').val().trim();
-		var url  = $('#tsi-schedule-url').val().trim();
-		var freq = $('#tsi-schedule-freq').val();
-		var prof = $('#tsi-schedule-profile').val();
+		var name  = $('#tsi-schedule-name').val().trim();
+		var url   = $('#tsi-schedule-url').val().trim();
+		var freq  = $('#tsi-schedule-freq').val();
+		var prof  = $('#tsi-schedule-profile').val();
+		var email = $('#tsi-schedule-email').val().trim();
 
 		if (!name || !url) {
 			window.alert('Please enter a name and CSV URL.');
@@ -1285,7 +1362,8 @@
 			csv_url:       url,
 			post_type:     $('#tsi-post-type').val(),
 			frequency:     freq,
-			profile_id:    prof
+			profile_id:    prof,
+			email:         email
 		}, function (res) {
 			hideOverlay();
 			if (!res.success) {
@@ -1294,7 +1372,7 @@
 			}
 			tsiImporter.schedules = res.data.schedules;
 			loadSchedules();
-			$('#tsi-schedule-name, #tsi-schedule-url').val('');
+			$('#tsi-schedule-name, #tsi-schedule-url, #tsi-schedule-email').val('');
 			window.alert(res.data.message);
 		}).fail(function () {
 			hideOverlay();
@@ -1315,6 +1393,81 @@
 			if (res.success) {
 				tsiImporter.schedules = res.data.schedules;
 				loadSchedules();
+			}
+		});
+	});
+
+	/* ================================================================
+	 * Scheduled Exports
+	 * ================================================================ */
+
+	function loadExportSchedules() {
+		var schedules = tsiImporter.export_schedules || {};
+		var html = '';
+		$.each(schedules, function (id, s) {
+			html += '<tr>' +
+				'<td>' + esc(s.name) + '</td>' +
+				'<td>' + esc(s.post_type) + '</td>' +
+				'<td>' + esc(s.frequency) + '</td>' +
+				'<td>' + esc(s.email || '\u2014') + '</td>' +
+				'<td>' + esc(s.last_run || 'Never') + '</td>' +
+				'<td>' + esc(s.last_status || 'N/A') + '</td>' +
+				'<td><button type="button" class="button button-small tsi-delete-export-schedule" data-id="' + esc(id) + '">Delete</button></td>' +
+				'</tr>';
+		});
+		if (!html) {
+			html = '<tr><td colspan="7">No scheduled exports.</td></tr>';
+		}
+		$('#tsi-export-schedule-body').html(html);
+	}
+
+	$('#tsi-btn-add-export-schedule').on('click', function () {
+		var name  = $('#tsi-export-schedule-name').val().trim();
+		var freq  = $('#tsi-export-schedule-freq').val();
+		var email = $('#tsi-export-schedule-email').val().trim();
+
+		if (!name) {
+			window.alert('Please enter a name for the export schedule.');
+			return;
+		}
+
+		showOverlay('Creating export schedule\u2026');
+		$.post(tsiImporter.ajax_url, {
+			action:        'tsi_add_export_schedule',
+			nonce:         tsiImporter.nonce,
+			schedule_name: name,
+			post_type:     $('#tsi-post-type').val(),
+			frequency:     freq,
+			email:         email
+		}, function (res) {
+			hideOverlay();
+			if (!res.success) {
+				window.alert(res.data || 'Failed to create export schedule.');
+				return;
+			}
+			tsiImporter.export_schedules = res.data.export_schedules;
+			loadExportSchedules();
+			$('#tsi-export-schedule-name, #tsi-export-schedule-email').val('');
+			window.alert(res.data.message);
+		}).fail(function () {
+			hideOverlay();
+			window.alert('Export schedule request failed.');
+		});
+	});
+
+	$(document).on('click', '.tsi-delete-export-schedule', function () {
+		var sid = $(this).data('id');
+		if (!window.confirm('Delete this export schedule?')) {
+			return;
+		}
+		$.post(tsiImporter.ajax_url, {
+			action:      'tsi_delete_export_schedule',
+			nonce:       tsiImporter.nonce,
+			schedule_id: sid
+		}, function (res) {
+			if (res.success) {
+				tsiImporter.export_schedules = res.data.export_schedules;
+				loadExportSchedules();
 			}
 		});
 	});
