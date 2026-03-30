@@ -2,9 +2,9 @@
 
 ## Overview
 
-WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV. Single-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
+WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV, JSON, and XML. Single-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
 
-- **Version**: 1.2.0
+- **Version**: 1.3.0
 - **License**: GPL-2.0-or-later
 - **Requires**: WordPress 5.8+, PHP 7.4+
 - **Tested up to**: WordPress 6.9
@@ -201,6 +201,28 @@ Actions:
 - `tsi_register_meta_box()` — Register single post export meta box
 - `tsi_render_meta_box()` — Render meta box with download button
 - `tsi_ajax_export_single_post()` — AJAX handler for single post CSV export
+
+## v1.3.0 Features
+
+1. **XML & JSON Import** — Import from XML (including WXR format) and JSON files alongside CSV. Auto-detects format from file extension and MIME type.
+2. **Excel XLSX Export** — Export as .xlsx spreadsheets via PHP ZipArchive. Falls back to CSV if ZipArchive unavailable.
+3. **Product Image Gallery** — Import WooCommerce product gallery images from comma-separated URLs via `_product_gallery_urls` field.
+4. **Hierarchical Taxonomy Import** — Use `>` separator to create nested term hierarchies (e.g., `Parent > Child > Grandchild`). Parents auto-created.
+5. **Error Row Retry** — After import, retry only failed rows without re-importing the entire file. Transient preserved for retry.
+6. **Real-time Mapping Preview** — Live preview panel in mapping step showing first row mapped to WordPress fields.
+7. **Import Progress ETA** — Estimated time remaining during batch import.
+8. **Scheduled Import Error Logging** — Last error details stored per schedule, shown as tooltip.
+9. **Accessibility** — ARIA attributes on progress bar/live log/overlay/validation, ESC key overlay close, `:focus-visible` keyboard styles.
+
+### New Helper Functions (v1.3.0)
+- `tsi_read_json_file()` — Read and parse JSON file (array of objects), flatten nested keys with dot notation
+- `tsi_read_xml_file()` — Parse XML via SimpleXML, supports WXR format and auto-detecting repeating elements
+- `tsi_read_import_file()` — Dispatcher routing to CSV/JSON/XML reader by file extension
+- `tsi_flatten_array()` — Recursive helper for JSON nested key flattening
+- `tsi_xml_element_to_flat()` — Recursive helper for XML element flattening
+- `tsi_set_product_gallery()` — Download comma-separated image URLs and store as WooCommerce product gallery
+- `tsi_generate_xlsx()` — Build minimal valid XLSX using ZipArchive
+- `tsi_xlsx_col_letter()` — Convert 0-based column index to Excel column letter (A, B, ..., AA, ...)
 
 ## Coding Standards
 

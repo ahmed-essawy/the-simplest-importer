@@ -528,15 +528,51 @@
 
 .tsi-mapping-actions {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
+	flex-direction: column;
 	margin-top: 16px;
-	gap: 12px;
+	gap: 16px;
 }
 
 .tsi-mapping-actions #tsi-add-extra .dashicons {
 	vertical-align: middle;
 	margin-top: -2px;
+}
+
+/* Import Settings collapsible */
+.tsi-import-settings {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f9fafb;
+}
+
+.tsi-import-settings > summary {
+	cursor: pointer;
+	padding: 10px 16px;
+	font-weight: 600;
+	font-size: 13px;
+	color: #1d2327;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.tsi-import-settings > summary:hover {
+	color: #2271b1;
+}
+
+.tsi-import-settings-body {
+	padding: 0 16px 16px;
+}
+
+.tsi-import-settings-body .tsi-import-options {
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: none;
+}
+
+.tsi-import-settings-body .tsi-filter-section {
+	margin: 12px 0 0;
+	border-color: #e0e0e0;
 }
 
 .tsi-btn-run {
@@ -553,7 +589,11 @@
 
 .tsi-import-buttons {
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
 	gap: 8px;
+	padding-top: 8px;
+	border-top: 1px solid #e0e0e0;
 }
 
 /* ------------------------------------------------------------------
@@ -717,6 +757,19 @@
 }
 
 /* ------------------------------------------------------------------
+ * Focus — Keyboard accessibility
+ * ------------------------------------------------------------------ */
+
+.tsi-wrap button:focus-visible,
+.tsi-wrap select:focus-visible,
+.tsi-wrap input:focus-visible,
+.tsi-wrap a:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 1px #fff;
+}
+
+/* ------------------------------------------------------------------
  * Responsive — Tablet
  * ------------------------------------------------------------------ */
 
@@ -769,9 +822,12 @@
 		text-align: right;
 	}
 
-	.tsi-mapping-actions {
-		flex-direction: column;
-		align-items: stretch;
+	.tsi-import-settings > summary {
+		padding: 8px 12px;
+	}
+
+	.tsi-import-settings-body {
+		padding: 0 12px 12px;
 	}
 
 	.tsi-import-buttons {
@@ -812,6 +868,15 @@
 		gap: 8px;
 	}
 
+	.tsi-export-actions {
+		flex-wrap: wrap;
+	}
+
+	.tsi-export-format {
+		min-width: 0;
+		flex: 1 1 auto;
+	}
+
 	.tsi-export-advanced-body {
 		overflow-x: auto;
 	}
@@ -819,6 +884,29 @@
 	.tsi-export-fields-list {
 		max-height: 200px;
 		overflow-y: auto;
+	}
+
+	.tsi-mapping-preview {
+		padding: 10px;
+	}
+
+	.tsi-preview-mini {
+		width: 100%;
+	}
+
+	.tsi-preview-mini th,
+	.tsi-preview-mini td {
+		padding: 3px 6px;
+		font-size: 11px;
+	}
+
+	.tsi-filter-rule {
+		gap: 4px;
+	}
+
+	.tsi-filter-rule select,
+	.tsi-filter-rule input {
+		min-width: 100px;
 	}
 
 	.tsi-file-info {
@@ -1045,6 +1133,15 @@
 		width: 100%;
 	}
 
+	.tsi-import-settings > summary {
+		padding: 8px 10px;
+		font-size: 12px;
+	}
+
+	.tsi-import-settings-body {
+		padding: 0 10px 10px;
+	}
+
 	.tsi-mapping-toolbar {
 		gap: 6px;
 	}
@@ -1112,9 +1209,35 @@
 		justify-content: center;
 	}
 
+	.tsi-export-actions {
+		flex-direction: column;
+	}
+
+	.tsi-export-format {
+		width: 100%;
+	}
+
 	.tsi-export-actions .button {
 		width: 100%;
 		text-align: center;
+	}
+
+	.tsi-mapping-preview {
+		padding: 8px;
+	}
+
+	.tsi-mapping-preview h4 {
+		font-size: 12px;
+	}
+
+	.tsi-preview-mini th,
+	.tsi-preview-mini td {
+		padding: 3px 4px;
+		font-size: 10px;
+	}
+
+	.tsi-preview-mini code {
+		font-size: 9px;
 	}
 
 	.tsi-export-range-fields label,
@@ -1259,9 +1382,16 @@
 }
 
 .tsi-export-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	margin-top: 16px;
 	padding-top: 16px;
 	border-top: 1px solid #e0e0e0;
+}
+
+.tsi-export-format {
+	min-width: 120px;
 }
 
 .tsi-export-actions .button .dashicons {
@@ -1504,6 +1634,46 @@
 	padding: 6px 8px;
 	border-bottom: 1px solid #eee;
 	font-size: 13px;
+}
+
+.tsi-schedule-error {
+	color: #d63638;
+	cursor: help;
+	border-bottom: 1px dashed #d63638;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Preview
+ * ------------------------------------------------------------------ */
+
+.tsi-mapping-preview {
+	margin-top: 16px;
+	padding: 12px;
+	background: #f0f6fc;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.tsi-mapping-preview h4 {
+	margin: 0 0 8px;
+	font-size: 13px;
+	color: #1d2327;
+}
+
+.tsi-preview-mini {
+	border-collapse: collapse;
+}
+
+.tsi-preview-mini th,
+.tsi-preview-mini td {
+	padding: 4px 8px;
+	font-size: 12px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.tsi-preview-mini code {
+	font-size: 11px;
+	word-break: break-all;
 }
 
 .tsi-schedule-form {

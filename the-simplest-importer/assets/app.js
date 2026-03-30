@@ -12,15 +12,24 @@
 	 * State
 	 * ---------------------------------------------------------------- */
 
-	var csvHeaders      = [];
-	var csvToken        = '';
-	var csvRowCount     = 0;
-	var extraFieldCount = 0;
-	var postTypeData    = {};
-	var lastHistoryId   = '';
-	var lastAllLogs     = [];
-	var fileQueue       = [];
-	var csvDelimiter    = ',';
+	var csvHeaders       = [];
+	var csvToken         = '';
+	var csvRowCount      = 0;
+	var extraFieldCount  = 0;
+	var postTypeData     = {};
+	var lastHistoryId    = '';
+	var lastAllLogs      = [];
+	var fileQueue        = [];
+	var csvDelimiter     = ',';
+	var failedRowIndices = [];
+	var lastMapping      = {};
+	var lastImportMode   = 'insert';
+	var lastDryRun       = false;
+	var lastDupField     = '';
+	var lastDupMeta      = '';
+	var lastTransforms   = {};
+	var lastFilters      = [];
+	var firstPreviewRow  = [];
 
 	/* ================================================================
 	 * Step 1 — Load post types
@@ -64,12 +73,12 @@
 				$('#tsi-btn-export').show();
 				/* Show row count in export button (#15) */
 				if (pt && pt.count) {
-					$('#tsi-btn-export').find('.tsi-action-desc').text('Export ' + pt.count + ' rows to CSV');
+					$('#tsi-btn-export').find('.tsi-action-desc').text('Export ' + pt.count + ' rows');
 				}
 			}
 			$('#tsi-step-actions').slideDown(200);
 		} else {
-			$('#tsi-btn-export').show().find('.tsi-action-desc').text('Export to CSV');
+			$('#tsi-btn-export').show().find('.tsi-action-desc').text('Export');
 			$('#tsi-step-actions').slideUp(200);
 		}
 		resetFrom('tsi-step-source');
@@ -164,12 +173,14 @@
 
 	/* Run Export */
 	$('#tsi-btn-run-export').on('click', function () {
-		var mode = $('input[name="tsi-export-mode"]:checked').val();
+		var mode   = $('input[name="tsi-export-mode"]:checked').val();
+		var format = $('#tsi-export-format').val() || 'csv';
 		var params = {
-			action:      'tsi_export',
-			nonce:       tsiImporter.nonce,
-			post_type:   $('#tsi-post-type').val(),
-			export_mode: mode
+			action:        'tsi_export',
+			nonce:         tsiImporter.nonce,
+			post_type:     $('#tsi-post-type').val(),
+			export_mode:   mode,
+			export_format: format
 		};
 
 		if (mode === 'rows') {
@@ -261,7 +272,7 @@
 				window.alert(res.data || 'Export failed.');
 				return;
 			}
-			downloadBase64(res.data.csv, res.data.filename);
+			downloadBase64(res.data.csv, res.data.filename, res.data.mime || 'text/csv');
 		}).fail(function () {
 			hideOverlay();
 			window.alert('Export request failed.');
@@ -341,13 +352,13 @@
 			fileQueue = [];
 			var i;
 			for (i = 0; i < files.length; i++) {
-				if (files[i].name.toLowerCase().match(/\.csv$/)) {
+				if (files[i].name.toLowerCase().match(/\.(csv|json|xml)$/)) {
 					fileQueue.push(files[i]);
 				}
 			}
 			if (fileQueue.length > 1) {
 				$('#tsi-file-queue').html(
-					'<strong>' + fileQueue.length + ' CSV files queued.</strong> ' +
+					'<strong>' + fileQueue.length + ' files queued.</strong> ' +
 					'Processing first file. Remaining files will be processed after each import completes.'
 				).show();
 				uploadFile(fileQueue.shift());
@@ -377,8 +388,8 @@
 	 * Upload a CSV file via AJAX and parse it.
 	 */
 	function uploadFile(file) {
-		if (!file.name.toLowerCase().match(/\.csv$/)) {
-			window.alert('Please select a .csv file.');
+		if (!file.name.toLowerCase().match(/\.(csv|json|xml)$/)) {
+			window.alert('Please select a .csv, .json, or .xml file.');
 			return;
 		}
 
@@ -387,7 +398,7 @@
 		formData.append('nonce', tsiImporter.nonce);
 		formData.append('csv_file', file);
 
-		showOverlay('Parsing CSV\u2026');
+		showOverlay('Parsing file\u2026');
 
 		$.ajax({
 			url:         tsiImporter.ajax_url,
@@ -398,7 +409,7 @@
 			success: function (res) {
 				hideOverlay();
 				if (!res.success) {
-					window.alert(res.data || 'Error parsing CSV.');
+					window.alert(res.data || 'Error parsing file.');
 					return;
 				}
 				onCsvParsed(res.data, file.name);
@@ -419,7 +430,7 @@
 			return;
 		}
 
-		showOverlay('Fetching CSV\u2026');
+		showOverlay('Fetching file\u2026');
 		$.post(tsiImporter.ajax_url, {
 			action:  'tsi_parse_csv_url',
 			nonce:   tsiImporter.nonce,
@@ -427,10 +438,10 @@
 		}, function (res) {
 			hideOverlay();
 			if (!res.success) {
-				window.alert(res.data || 'Error fetching CSV.');
+				window.alert(res.data || 'Error fetching file.');
 				return;
 			}
-			onCsvParsed(res.data, url.split('/').pop() || 'remote.csv');
+			onCsvParsed(res.data, url.split('/').pop() || 'remote-data');
 		}).fail(function () {
 			hideOverlay();
 			window.alert('Fetch request failed.');
@@ -444,6 +455,7 @@
 		csvToken    = data.token;
 		csvRowCount = data.row_count;
 		csvDelimiter = data.delimiter || ',';
+		firstPreviewRow = (data.preview && data.preview.length) ? data.preview[0] : [];
 
 		/* File info badge — include delimiter (#11) */
 		var delimLabel = csvDelimiter === '\t' ? 'tab' : csvDelimiter;
@@ -500,6 +512,7 @@
 			}
 			$('#tsi-step-mapping').slideDown(200);
 			scrollTo('#tsi-step-mapping');
+			updateMappingPreview();
 		});
 	}
 
@@ -767,10 +780,19 @@
 		var totals = { inserted: 0, updated: 0, skipped: 0, errors: 0 };
 		var allLogs = [];
 		var filters = buildFilterPayload();
-		lastHistoryId = '';
-		lastAllLogs   = [];
+		lastHistoryId    = '';
+		lastAllLogs      = [];
+		failedRowIndices = [];
+		lastMapping      = mapping;
+		lastImportMode   = importMode;
+		lastDryRun       = isDryRun;
+		lastDupField     = dupField;
+		lastDupMeta      = dupMeta;
+		lastTransforms   = transforms;
+		lastFilters      = filters;
+		var batchStartTime = Date.now();
 
-		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters);
+		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, batchStartTime);
 	});
 
 	/**
@@ -844,10 +866,57 @@
 	}
 
 	/**
+	 * Update the mapping preview panel using the first CSV row.
+	 */
+	function updateMappingPreview() {
+		if (!firstPreviewRow.length) {
+			$('#tsi-mapping-preview').hide();
+			return;
+		}
+
+		var items = [];
+		$('#tsi-mapping-table tbody tr').each(function () {
+			var $cb = $(this).find('.tsi-field-check');
+			if (!$cb.is(':checked')) {
+				return;
+			}
+			var label = $(this).find('.tsi-field-label').text() || $(this).find('.tsi-extra-key').val() || '?';
+			var $sel  = $(this).find('.tsi-col-select');
+			var val   = '';
+			if ($sel.val() === '__custom__') {
+				val = $(this).find('.tsi-custom-value').val() || '';
+			} else {
+				var colIdx = parseInt($sel.val(), 10);
+				if (!isNaN(colIdx) && colIdx >= 0 && colIdx < firstPreviewRow.length) {
+					val = firstPreviewRow[colIdx];
+				}
+			}
+			items.push({ label: label, value: val });
+		});
+
+		if (!items.length) {
+			$('#tsi-mapping-preview').hide();
+			return;
+		}
+
+		var html = '<table class="widefat tsi-preview-mini"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>';
+		$.each(items, function (i, it) {
+			html += '<tr><td>' + esc(it.label) + '</td><td><code>' + esc(it.value || '—') + '</code></td></tr>';
+		});
+		html += '</tbody></table>';
+		$('#tsi-mapping-preview-content').html(html);
+		$('#tsi-mapping-preview').show();
+	}
+
+	/* Update preview on any mapping change */
+	$(document).on('change', '.tsi-col-select, .tsi-field-check, .tsi-custom-value', updateMappingPreview);
+	$(document).on('input', '.tsi-custom-value', updateMappingPreview);
+
+	/**
 	 * Process one batch, then recurse until done.
 	 */
-	function processBatch(offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters) {
-		$.post(tsiImporter.ajax_url, {
+	function processBatch(offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, startTime, retryRows) {
+		var postData = {
 			action:       'tsi_import_batch',
 			nonce:        tsiImporter.nonce,
 			token:        csvToken,
@@ -862,7 +931,11 @@
 			transforms:   JSON.stringify(transforms),
 			filters:      JSON.stringify(filters || []),
 			history_id:   lastHistoryId
-		}, function (res) {
+		};
+		if (retryRows && retryRows.length) {
+			postData.retry_rows = JSON.stringify(retryRows);
+		}
+		$.post(tsiImporter.ajax_url, postData, function (res) {
 			if (!res.success) {
 				$('#tsi-progress-detail').text(res.data || 'Import failed.');
 				return;
@@ -874,8 +947,22 @@
 			/* Update progress bar */
 			$('#tsi-progress-fill').css('width', percent + '%');
 			$('#tsi-progress-pct').text(percent + '%');
+			$('#tsi-progress-bar').attr('aria-valuenow', percent);
+
+			/* Calculate ETA */
+			var elapsed = (Date.now() - startTime) / 1000;
+			var etaText = '';
+			if (d.offset > 0 && !d.done) {
+				var remaining = Math.round(elapsed * (d.total - d.offset) / d.offset);
+				if (remaining >= 60) {
+					etaText = ' \u2014 ~' + Math.ceil(remaining / 60) + 'm remaining';
+				} else {
+					etaText = ' \u2014 ~' + remaining + 's remaining';
+				}
+			}
+
 			$('#tsi-progress-detail').text(
-				'Processed ' + d.offset + ' of ' + d.total + ' rows\u2026'
+				'Processed ' + d.offset + ' of ' + d.total + ' rows' + etaText
 			);
 
 			/* Accumulate */
@@ -883,6 +970,9 @@
 			totals.updated  += d.updated;
 			totals.skipped  += d.skipped;
 			totals.errors   += d.errors;
+			if (d.failed_rows && d.failed_rows.length) {
+				failedRowIndices = failedRowIndices.concat(d.failed_rows);
+			}
 			allLogs = allLogs.concat(d.log);
 
 			/* Capture history ID for rollback */
@@ -906,7 +996,7 @@
 			$liveLog.scrollTop($liveLog[0].scrollHeight);
 
 			if (!d.done) {
-				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters);
+				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, startTime, retryRows);
 			} else {
 				lastAllLogs = allLogs;
 				showResults(totals, allLogs, isDryRun);
@@ -961,6 +1051,9 @@
 		/* Show rollback button only for non-dry-run imports with a history ID */
 		$('#tsi-btn-rollback').toggle(!isDryRun && !!lastHistoryId);
 
+		/* Show retry button when there are failed rows */
+		$('#tsi-btn-retry-failed').toggle(!isDryRun && failedRowIndices.length > 0);
+
 		$('#tsi-step-results').slideDown(200);
 		scrollTo('#tsi-step-results');
 	}
@@ -1008,6 +1101,32 @@
 			hideOverlay();
 			window.alert('Rollback request failed.');
 		});
+	});
+
+	/* Retry Failed Rows */
+	$('#tsi-btn-retry-failed').on('click', function () {
+		if (!failedRowIndices.length) {
+			return;
+		}
+
+		/* Hide results and show progress */
+		$('#tsi-step-results').hide();
+		$('#tsi-step-progress').slideDown(200);
+		$('#tsi-progress-title').text('Retrying failed rows\u2026');
+		$('#tsi-progress-fill').css('width', '0%');
+		$('#tsi-progress-pct').text('0%');
+		$('#tsi-progress-detail').text('');
+		$('#tsi-progress-bar').attr('aria-valuenow', 0);
+		$('#tsi-live-log').html('');
+
+		var totals      = { inserted: 0, updated: 0, skipped: 0, errors: 0 };
+		var allLogs     = [];
+		var retryIndices = failedRowIndices.slice();
+		failedRowIndices = [];
+		lastAllLogs      = [];
+		var startTime    = Date.now();
+
+		processBatch(0, lastMapping, totals, allLogs, lastImportMode, lastDryRun, lastDupField, lastDupMeta, lastTransforms, lastFilters, startTime, retryIndices);
 	});
 
 	/* Start New Import */
@@ -1125,7 +1244,7 @@
 		html += '<option value="not_empty">is not empty</option>';
 		html += '</select>';
 		html += '<input type="text" class="tsi-filter-value small-text" placeholder="value">';
-		html += '<button type="button" class="button button-small tsi-remove-filter"><span class="dashicons dashicons-no-alt"></span></button>';
+		html += '<button type="button" class="button button-small tsi-remove-filter" aria-label="Remove filter rule"><span class="dashicons dashicons-no-alt"></span></button>';
 		html += '</div>';
 		$rules.append(html);
 	});
@@ -1319,13 +1438,18 @@
 		var schedules = tsiImporter.schedules || {};
 		var html = '';
 		$.each(schedules, function (id, s) {
+			var statusText = esc(s.last_status || 'N/A');
+			var statusAttr = '';
+			if (s.last_error) {
+				statusAttr = ' title="' + $('<span>').text(s.last_error).html() + '" class="tsi-schedule-error"';
+			}
 			html += '<tr>' +
 				'<td>' + esc(s.name) + '</td>' +
 				'<td>' + esc(s.post_type) + '</td>' +
 				'<td>' + esc(s.frequency) + '</td>' +
 				'<td>' + esc(s.email || '—') + '</td>' +
 				'<td>' + esc(s.last_run || 'Never') + '</td>' +
-				'<td>' + esc(s.last_status || 'N/A') + '</td>' +
+				'<td' + statusAttr + '>' + statusText + '</td>' +
 				'<td><button type="button" class="button button-small tsi-delete-schedule" data-id="' + esc(id) + '">Delete</button></td>' +
 				'</tr>';
 		});
@@ -1539,6 +1663,13 @@
 		$('#tsi-overlay').hide();
 	}
 
+	/* Close overlay on ESC key */
+	$(document).on('keydown', function (e) {
+		if (27 === e.keyCode && $('#tsi-overlay').is(':visible')) {
+			hideOverlay();
+		}
+	});
+
 	function scrollTo(selector) {
 		var $el = $(selector);
 		if ($el.length) {
@@ -1555,14 +1686,15 @@
 		return div.innerHTML;
 	}
 
-	function downloadBase64(b64, filename) {
+	function downloadBase64(b64, filename, mime) {
 		var byteChars   = atob(b64);
 		var byteNumbers = new Array(byteChars.length);
 		var i;
 		for (i = 0; i < byteChars.length; i++) {
 			byteNumbers[i] = byteChars.charCodeAt(i);
 		}
-		var blob = new Blob([new Uint8Array(byteNumbers)], { type: 'text/csv' });
+		var blobType = mime || 'text/csv';
+		var blob = new Blob([new Uint8Array(byteNumbers)], { type: blobType });
 		var link = document.createElement('a');
 		link.href     = URL.createObjectURL(blob);
 		link.download = filename;

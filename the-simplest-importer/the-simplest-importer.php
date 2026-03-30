@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       The Simplest Importer
  * Plugin URI:        https://github.com/ahmed-essawy/the-simplest-importer
- * Description:       Import, export, and manage posts and custom post types via CSV with visual column mapping and batch processing.
- * Version:           1.2.0
+ * Description:       Import, export, and manage posts and custom post types via CSV, JSON, and XML with visual column mapping and batch processing.
+ * Version:           1.3.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Ahmed Essawy
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TSI_VERSION', '1.2.0' );
+define( 'TSI_VERSION', '1.3.0' );
 define( 'TSI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TSI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'TSI_HISTORY_OPTION', 'tsi_import_history' );
@@ -68,7 +68,7 @@ function tsi_register_wp_importer() {
 	register_importer(
 		'the-simplest-importer',
 		__( 'The Simplest Importer', 'the-simplest-importer' ),
-		__( 'Import posts and custom post types from CSV files with visual column mapping.', 'the-simplest-importer' ),
+		__( 'Import posts and custom post types from CSV, JSON, and XML files with visual column mapping.', 'the-simplest-importer' ),
 		'tsi_wp_importer_dispatch'
 	);
 }
@@ -147,7 +147,7 @@ function tsi_render_admin_page() {
 				<span class="dashicons dashicons-database-import"></span>
 				<?php esc_html_e( 'The Simplest Importer', 'the-simplest-importer' ); ?>
 			</h1>
-			<p class="tsi-subtitle"><?php esc_html_e( 'Import, export, and manage your WordPress content using CSV files.', 'the-simplest-importer' ); ?></p>
+			<p class="tsi-subtitle"><?php esc_html_e( 'Import, export, and manage your WordPress content using CSV, JSON, and XML files.', 'the-simplest-importer' ); ?></p>
 		</div>
 
 		<!-- Step 1 — Choose content type -->
@@ -181,12 +181,12 @@ function tsi_render_admin_page() {
 					<button type="button" id="tsi-btn-import" class="tsi-action-card">
 						<span class="dashicons dashicons-upload"></span>
 						<strong><?php esc_html_e( 'Import', 'the-simplest-importer' ); ?></strong>
-						<span class="tsi-action-desc"><?php esc_html_e( 'Upload a CSV to create or update posts', 'the-simplest-importer' ); ?></span>
+						<span class="tsi-action-desc"><?php esc_html_e( 'Upload a file to create or update posts', 'the-simplest-importer' ); ?></span>
 					</button>
 					<button type="button" id="tsi-btn-export" class="tsi-action-card">
 						<span class="dashicons dashicons-download"></span>
 						<strong><?php esc_html_e( 'Export', 'the-simplest-importer' ); ?></strong>
-						<span class="tsi-action-desc"><?php esc_html_e( 'Download posts as a CSV file', 'the-simplest-importer' ); ?></span>
+						<span class="tsi-action-desc"><?php esc_html_e( 'Download posts as CSV or Excel', 'the-simplest-importer' ); ?></span>
 					</button>
 					<button type="button" id="tsi-btn-template" class="tsi-action-card">
 						<span class="dashicons dashicons-media-spreadsheet"></span>
@@ -201,7 +201,7 @@ function tsi_render_admin_page() {
 					<button type="button" id="tsi-btn-schedule" class="tsi-action-card">
 						<span class="dashicons dashicons-clock"></span>
 						<strong><?php esc_html_e( 'Schedule', 'the-simplest-importer' ); ?></strong>
-						<span class="tsi-action-desc"><?php esc_html_e( 'Set up recurring CSV imports', 'the-simplest-importer' ); ?></span>
+						<span class="tsi-action-desc"><?php esc_html_e( 'Set up recurring imports from a URL', 'the-simplest-importer' ); ?></span>
 					</button>
 				</div>
 			</div>
@@ -278,6 +278,10 @@ function tsi_render_admin_page() {
 					</div>
 				</fieldset>
 				<div class="tsi-export-actions">
+					<select id="tsi-export-format" class="tsi-export-format">
+						<option value="csv"><?php esc_html_e( 'CSV', 'the-simplest-importer' ); ?></option>
+						<option value="xlsx"><?php esc_html_e( 'Excel (XLSX)', 'the-simplest-importer' ); ?></option>
+					</select>
 					<button type="button" id="tsi-btn-run-export" class="button button-primary">
 						<span class="dashicons dashicons-download"></span>
 						<?php esc_html_e( 'Export', 'the-simplest-importer' ); ?>
@@ -312,7 +316,7 @@ function tsi_render_admin_page() {
 			<div class="tsi-card-header">
 				<span class="tsi-step-num">3</span>
 				<div>
-					<h2><?php esc_html_e( 'Provide CSV File', 'the-simplest-importer' ); ?></h2>
+					<h2><?php esc_html_e( 'Provide Data File', 'the-simplest-importer' ); ?></h2>
 					<p><?php esc_html_e( 'Upload a file from your computer or fetch one from a URL.', 'the-simplest-importer' ); ?></p>
 				</div>
 			</div>
@@ -332,11 +336,11 @@ function tsi_render_admin_page() {
 					<div class="tsi-dropzone" id="tsi-dropzone">
 						<div class="tsi-dropzone-inner">
 							<span class="dashicons dashicons-cloud-upload"></span>
-							<p class="tsi-dropzone-title"><?php esc_html_e( 'Drag & drop your CSV file here', 'the-simplest-importer' ); ?></p>
+							<p class="tsi-dropzone-title"><?php esc_html_e( 'Drag & drop your file here', 'the-simplest-importer' ); ?></p>
 							<p class="tsi-dropzone-or"><?php esc_html_e( 'or', 'the-simplest-importer' ); ?></p>
 							<button type="button" class="button" id="tsi-browse-btn"><?php esc_html_e( 'Browse Files', 'the-simplest-importer' ); ?></button>
-							<input type="file" id="tsi-csv-file" accept=".csv">
-							<p class="description"><?php esc_html_e( 'Accepts .csv files · UTF-8 recommended · first row must be column headers', 'the-simplest-importer' ); ?></p>
+							<input type="file" id="tsi-csv-file" accept=".csv,.json,.xml">
+							<p class="description"><?php esc_html_e( 'Accepts .csv, .json, and .xml files · UTF-8 recommended · first row/object must define columns', 'the-simplest-importer' ); ?></p>
 						</div>
 					</div>
 				</div>
@@ -346,7 +350,7 @@ function tsi_render_admin_page() {
 						<input type="url" id="tsi-csv-url" class="regular-text" placeholder="https://example.com/data.csv">
 						<button type="button" id="tsi-btn-fetch-url" class="button button-primary"><?php esc_html_e( 'Fetch', 'the-simplest-importer' ); ?></button>
 					</div>
-					<p class="description"><?php esc_html_e( 'Enter a direct link to a publicly accessible CSV file. Google Sheets URLs are automatically converted.', 'the-simplest-importer' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Enter a direct link to a publicly accessible CSV, JSON, or XML file. Google Sheets URLs are automatically converted.', 'the-simplest-importer' ); ?></p>
 				</div>
 
 				<div id="tsi-file-info" class="tsi-file-info" style="display:none"></div>
@@ -361,7 +365,7 @@ function tsi_render_admin_page() {
 				<span class="tsi-step-num">4</span>
 				<div>
 					<h2><?php esc_html_e( 'Map Columns', 'the-simplest-importer' ); ?></h2>
-					<p><?php esc_html_e( 'Match CSV columns to post fields. Uncheck fields you do not need.', 'the-simplest-importer' ); ?></p>
+					<p><?php esc_html_e( 'Match file columns to post fields. Uncheck fields you do not need.', 'the-simplest-importer' ); ?></p>
 				</div>
 			</div>
 			<div class="tsi-card-body">
@@ -382,45 +386,56 @@ function tsi_render_admin_page() {
 							<tr>
 								<th class="tsi-col-check"><?php esc_html_e( 'Use', 'the-simplest-importer' ); ?></th>
 								<th class="tsi-col-field"><?php esc_html_e( 'Post Field', 'the-simplest-importer' ); ?></th>
-								<th class="tsi-col-map"><?php esc_html_e( 'CSV Column / Value', 'the-simplest-importer' ); ?></th>
+								<th class="tsi-col-map"><?php esc_html_e( 'Column / Value', 'the-simplest-importer' ); ?></th>
 								<th class="tsi-col-transform"><?php esc_html_e( 'Transform', 'the-simplest-importer' ); ?></th>
 							</tr>
 						</thead>
 						<tbody></tbody>
 					</table>
 				</div>
+				<div class="tsi-mapping-preview" id="tsi-mapping-preview" style="display:none">
+					<h4><?php esc_html_e( 'Sample Row Preview', 'the-simplest-importer' ); ?></h4>
+					<div id="tsi-mapping-preview-content"></div>
+				</div>
 				<div class="tsi-mapping-actions">
 					<button type="button" id="tsi-add-extra" class="button">
 						<span class="dashicons dashicons-plus-alt2"></span>
 						<?php esc_html_e( 'Add Custom Field', 'the-simplest-importer' ); ?>
 					</button>
-					<div class="tsi-import-options">
-						<label class="tsi-option-label" title="<?php esc_attr_e( 'Process all rows without inserting or updating any posts', 'the-simplest-importer' ); ?>">
-							<input type="checkbox" id="tsi-dry-run"> <?php esc_html_e( 'Dry Run', 'the-simplest-importer' ); ?>
-						</label>
-						<label class="tsi-option-label" title="<?php esc_attr_e( 'Check for existing posts before inserting', 'the-simplest-importer' ); ?>">
-							<input type="checkbox" id="tsi-dup-check"> <?php esc_html_e( 'Duplicate Check', 'the-simplest-importer' ); ?>
-						</label>
-						<div id="tsi-dup-options">
-							<select id="tsi-dup-field" class="tsi-dup-field-select">
-								<option value="post_title"><?php esc_html_e( 'by Title', 'the-simplest-importer' ); ?></option>
-								<option value="post_name"><?php esc_html_e( 'by Slug', 'the-simplest-importer' ); ?></option>
-								<option value="meta_key"><?php esc_html_e( 'by Meta Key', 'the-simplest-importer' ); ?></option>
-							</select>
-							<span id="tsi-dup-meta-wrap">
-								<input type="text" id="tsi-dup-meta-key" class="small-text" placeholder="<?php esc_attr_e( 'meta key', 'the-simplest-importer' ); ?>">
-							</span>
+
+					<details class="tsi-import-settings" open>
+						<summary><?php esc_html_e( 'Import Settings', 'the-simplest-importer' ); ?></summary>
+						<div class="tsi-import-settings-body">
+							<div class="tsi-import-options">
+								<label class="tsi-option-label" title="<?php esc_attr_e( 'Process all rows without inserting or updating any posts', 'the-simplest-importer' ); ?>">
+									<input type="checkbox" id="tsi-dry-run"> <?php esc_html_e( 'Dry Run', 'the-simplest-importer' ); ?>
+								</label>
+								<label class="tsi-option-label" title="<?php esc_attr_e( 'Check for existing posts before inserting', 'the-simplest-importer' ); ?>">
+									<input type="checkbox" id="tsi-dup-check"> <?php esc_html_e( 'Duplicate Check', 'the-simplest-importer' ); ?>
+								</label>
+								<div id="tsi-dup-options">
+									<select id="tsi-dup-field" class="tsi-dup-field-select">
+										<option value="post_title"><?php esc_html_e( 'by Title', 'the-simplest-importer' ); ?></option>
+										<option value="post_name"><?php esc_html_e( 'by Slug', 'the-simplest-importer' ); ?></option>
+										<option value="meta_key"><?php esc_html_e( 'by Meta Key', 'the-simplest-importer' ); ?></option>
+									</select>
+									<span id="tsi-dup-meta-wrap">
+										<input type="text" id="tsi-dup-meta-key" class="small-text" placeholder="<?php esc_attr_e( 'meta key', 'the-simplest-importer' ); ?>">
+									</span>
+								</div>
+							</div>
+							<div class="tsi-filter-section" id="tsi-filter-section" style="display:none">
+								<h4><?php esc_html_e( 'Row Filters', 'the-simplest-importer' ); ?></h4>
+								<p class="description"><?php esc_html_e( 'Only import rows matching all rules (AND logic).', 'the-simplest-importer' ); ?></p>
+								<div id="tsi-filter-rules"></div>
+								<button type="button" id="tsi-add-filter" class="button button-small">
+									<span class="dashicons dashicons-plus-alt2"></span>
+									<?php esc_html_e( 'Add Filter Rule', 'the-simplest-importer' ); ?>
+								</button>
+							</div>
 						</div>
-					</div>
-					<div class="tsi-filter-section" id="tsi-filter-section" style="display:none">
-						<h4><?php esc_html_e( 'Row Filters', 'the-simplest-importer' ); ?></h4>
-						<p class="description"><?php esc_html_e( 'Only import rows matching all rules (AND logic).', 'the-simplest-importer' ); ?></p>
-						<div id="tsi-filter-rules"></div>
-						<button type="button" id="tsi-add-filter" class="button button-small">
-							<span class="dashicons dashicons-plus-alt2"></span>
-							<?php esc_html_e( 'Add Filter Rule', 'the-simplest-importer' ); ?>
-						</button>
-					</div>
+					</details>
+
 					<div class="tsi-import-buttons">
 						<button type="button" id="tsi-btn-validate" class="button tsi-btn-run">
 							<span class="dashicons dashicons-yes-alt"></span>
@@ -456,12 +471,12 @@ function tsi_render_admin_page() {
 			</div>
 			<div class="tsi-card-body">
 				<div class="tsi-progress">
-					<div class="tsi-progress-bar">
+					<div class="tsi-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="<?php esc_attr_e( 'Import progress', 'the-simplest-importer' ); ?>" id="tsi-progress-bar">
 						<div class="tsi-progress-fill" id="tsi-progress-fill"></div>
 					</div>
 					<span class="tsi-progress-pct" id="tsi-progress-pct">0%</span>
 				</div>
-				<div class="tsi-live-log" id="tsi-live-log"></div>
+				<div class="tsi-live-log" id="tsi-live-log" aria-live="polite" aria-relevant="additions"></div>
 			</div>
 		</div>
 
@@ -492,6 +507,10 @@ function tsi_render_admin_page() {
 						<span class="dashicons dashicons-undo"></span>
 						<?php esc_html_e( 'Rollback Import', 'the-simplest-importer' ); ?>
 					</button>
+					<button type="button" id="tsi-btn-retry-failed" class="button button-primary" style="display:none">
+						<span class="dashicons dashicons-controls-repeat"></span>
+						<?php esc_html_e( 'Retry Failed Rows', 'the-simplest-importer' ); ?>
+					</button>
 				</div>
 			</div>
 		</div>
@@ -502,11 +521,11 @@ function tsi_render_admin_page() {
 				<span class="tsi-step-num"><span class="dashicons dashicons-yes-alt"></span></span>
 				<div>
 					<h2><?php esc_html_e( 'Validation Results', 'the-simplest-importer' ); ?></h2>
-					<p><?php esc_html_e( 'Review issues found in your CSV data before importing.', 'the-simplest-importer' ); ?></p>
+					<p><?php esc_html_e( 'Review issues found in your data before importing.', 'the-simplest-importer' ); ?></p>
 				</div>
 			</div>
 			<div class="tsi-card-body">
-				<div id="tsi-validation-results"></div>
+				<div id="tsi-validation-results" role="alert"></div>
 				<div class="tsi-results-actions">
 					<button type="button" id="tsi-btn-proceed-import" class="button button-primary"><?php esc_html_e( 'Proceed with Import', 'the-simplest-importer' ); ?></button>
 					<button type="button" id="tsi-btn-cancel-import" class="button"><?php esc_html_e( 'Cancel', 'the-simplest-importer' ); ?></button>
@@ -576,7 +595,7 @@ function tsi_render_admin_page() {
 							<input type="text" id="tsi-schedule-name" class="regular-text" placeholder="<?php esc_attr_e( 'My daily import', 'the-simplest-importer' ); ?>">
 						</label>
 						<label>
-							<?php esc_html_e( 'CSV URL:', 'the-simplest-importer' ); ?>
+							<?php esc_html_e( 'Data URL:', 'the-simplest-importer' ); ?>
 							<input type="url" id="tsi-schedule-url" class="regular-text" placeholder="https://example.com/data.csv">
 						</label>
 						<label>
@@ -659,10 +678,10 @@ function tsi_render_admin_page() {
 		</div>
 
 		<!-- Overlay spinner (export / template) -->
-		<div id="tsi-overlay" class="tsi-overlay" style="display:none">
+		<div id="tsi-overlay" class="tsi-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Processing', 'the-simplest-importer' ); ?>">
 			<div class="tsi-overlay-inner">
 				<span class="spinner is-active"></span>
-				<span id="tsi-overlay-text"><?php esc_html_e( 'Processing…', 'the-simplest-importer' ); ?></span>
+				<span id="tsi-overlay-text" aria-live="assertive"><?php esc_html_e( 'Processing…', 'the-simplest-importer' ); ?></span>
 			</div>
 		</div>
 
@@ -818,7 +837,8 @@ function tsi_get_post_type_fields( $post_type ) {
 		$fields[ 'meta__' . $key ] = sprintf( __( 'Meta: %s', 'the-simplest-importer' ), $key );
 	}
 
-	$fields['_thumbnail_url'] = __( 'Featured Image URL', 'the-simplest-importer' );
+	$fields['_thumbnail_url']       = __( 'Featured Image URL', 'the-simplest-importer' );
+	$fields['_product_gallery_urls'] = __( 'Image Gallery URLs (comma-separated)', 'the-simplest-importer' );
 
 	/* SEO plugin fields — auto-detect Yoast SEO or Rank Math */
 	if ( defined( 'WPSEO_VERSION' ) ) {
@@ -903,20 +923,29 @@ function tsi_ajax_parse_csv() {
 	$file = $_FILES['csv_file'];
 
 	$ext = strtolower( pathinfo( sanitize_file_name( $file['name'] ), PATHINFO_EXTENSION ) );
-	if ( 'csv' !== $ext ) {
-		wp_send_json_error( esc_html__( 'Only .csv files are allowed.', 'the-simplest-importer' ) );
+	if ( ! in_array( $ext, array( 'csv', 'json', 'xml' ), true ) ) {
+		wp_send_json_error( esc_html__( 'Only .csv, .json, and .xml files are allowed.', 'the-simplest-importer' ) );
 	}
 
 	$finfo = finfo_open( FILEINFO_MIME_TYPE );
 	$mime  = finfo_file( $finfo, $file['tmp_name'] );
 	finfo_close( $finfo );
 
-	$allowed = array( 'text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel' );
+	$allowed = array(
+		'text/csv',
+		'text/plain',
+		'application/csv',
+		'application/vnd.ms-excel',
+		'application/json',
+		'text/json',
+		'text/xml',
+		'application/xml',
+	);
 	if ( ! in_array( $mime, $allowed, true ) ) {
 		wp_send_json_error( esc_html__( 'Invalid file type.', 'the-simplest-importer' ) );
 	}
 
-	$result = tsi_read_csv_file( $file['tmp_name'] );
+	$result = tsi_read_import_file( $file['tmp_name'], $ext );
 	if ( is_string( $result ) ) {
 		wp_send_json_error( $result );
 	}
@@ -967,7 +996,18 @@ function tsi_ajax_parse_csv_url() {
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for CSV parsing.
 	file_put_contents( $tmp, $body );
 
-	$result = tsi_read_csv_file( $tmp );
+	/* Detect file format from URL extension or Content-Type header */
+	$url_ext      = strtolower( pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+	$content_type = wp_remote_retrieve_header( $response, 'content-type' );
+	$format       = 'csv';
+
+	if ( 'json' === $url_ext || false !== strpos( $content_type, 'json' ) ) {
+		$format = 'json';
+	} elseif ( 'xml' === $url_ext || false !== strpos( $content_type, 'xml' ) ) {
+		$format = 'xml';
+	}
+
+	$result = tsi_read_import_file( $tmp, $format );
 	wp_delete_file( $tmp );
 
 	if ( is_string( $result ) ) {
@@ -1080,6 +1120,306 @@ function tsi_read_csv_file( $filepath ) {
 }
 
 /**
+ * Read a JSON file, store data in a transient, and return parsed info.
+ *
+ * Expects an array of objects (each object = one row) or a wrapper object
+ * containing an array in one of its top-level keys.
+ *
+ * @param string $filepath Absolute path to the JSON file.
+ * @return array|string Parsed data array on success, error message on failure.
+ */
+function tsi_read_json_file( $filepath ) {
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- Reading local temp file for JSON parsing.
+	$raw = file_get_contents( $filepath );
+	if ( false === $raw || '' === trim( $raw ) ) {
+		return esc_html__( 'Cannot read file or file is empty.', 'the-simplest-importer' );
+	}
+
+	$data = json_decode( $raw, true );
+	if ( null === $data || JSON_ERROR_NONE !== json_last_error() ) {
+		return esc_html__( 'Invalid JSON format.', 'the-simplest-importer' );
+	}
+
+	/* If root is an object, look for the first array value */
+	if ( ! wp_is_numeric_array( $data ) ) {
+		$found = false;
+		foreach ( $data as $key => $val ) {
+			if ( is_array( $val ) && wp_is_numeric_array( $val ) && ! empty( $val ) ) {
+				$data  = $val;
+				$found = true;
+				break;
+			}
+		}
+		if ( ! $found ) {
+			return esc_html__( 'JSON must contain an array of objects.', 'the-simplest-importer' );
+		}
+	}
+
+	if ( empty( $data ) ) {
+		return esc_html__( 'JSON array is empty.', 'the-simplest-importer' );
+	}
+
+	/* Flatten nested keys with dot notation and collect all unique keys */
+	$all_keys = array();
+	$flat_rows = array();
+
+	foreach ( $data as $item ) {
+		if ( ! is_array( $item ) ) {
+			continue;
+		}
+		$flat = array();
+		tsi_flatten_array( $item, $flat, '' );
+		$flat_rows[] = $flat;
+		foreach ( array_keys( $flat ) as $k ) {
+			$all_keys[ $k ] = true;
+		}
+	}
+
+	if ( empty( $flat_rows ) ) {
+		return esc_html__( 'JSON contains no valid row objects.', 'the-simplest-importer' );
+	}
+
+	$headers = array_keys( $all_keys );
+
+	/* Convert associative rows to indexed arrays matching headers order */
+	$rows = array();
+	foreach ( $flat_rows as $flat ) {
+		$row = array();
+		foreach ( $headers as $h ) {
+			$val   = isset( $flat[ $h ] ) ? $flat[ $h ] : '';
+			$row[] = is_array( $val ) ? wp_json_encode( $val ) : (string) $val;
+		}
+		$rows[] = $row;
+	}
+
+	/** This filter is documented in tsi_read_csv_file */
+	$csv_data = apply_filters( 'tsi_csv_parsed', array(
+		'headers'   => $headers,
+		'rows'      => $rows,
+		'delimiter' => 'json',
+	) );
+
+	$headers = $csv_data['headers'];
+	$rows    = $csv_data['rows'];
+
+	$token = wp_generate_password( 20, false );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
+
+	return array(
+		'headers'   => $headers,
+		'row_count' => count( $rows ),
+		'preview'   => array_slice( $rows, 0, 5 ),
+		'token'     => $token,
+		'delimiter' => 'json',
+	);
+}
+
+/**
+ * Recursively flatten a nested associative array.
+ *
+ * Nested keys are joined with a dot separator (e.g. meta.price).
+ *
+ * @param array  $array  The source array.
+ * @param array  $result The flat result array (passed by reference).
+ * @param string $prefix The current key prefix.
+ * @return void
+ */
+function tsi_flatten_array( $array, &$result, $prefix ) {
+	foreach ( $array as $key => $value ) {
+		$full_key = '' !== $prefix ? $prefix . '.' . $key : $key;
+		if ( is_array( $value ) && ! wp_is_numeric_array( $value ) ) {
+			tsi_flatten_array( $value, $result, $full_key );
+		} else {
+			$result[ $full_key ] = $value;
+		}
+	}
+}
+
+/**
+ * Read an XML file, store data in a transient, and return parsed info.
+ *
+ * Supports common structures:
+ * - Root element with repeating child elements (each child = one row).
+ * - WP WXR format: <channel><item>...</item></channel>
+ *
+ * @param string $filepath Absolute path to the XML file.
+ * @return array|string Parsed data array on success, error message on failure.
+ */
+function tsi_read_xml_file( $filepath ) {
+	if ( ! function_exists( 'simplexml_load_string' ) ) {
+		return esc_html__( 'XML parsing requires the SimpleXML PHP extension.', 'the-simplest-importer' );
+	}
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- Reading local temp file for XML parsing.
+	$raw = file_get_contents( $filepath );
+	if ( false === $raw || '' === trim( $raw ) ) {
+		return esc_html__( 'Cannot read file or file is empty.', 'the-simplest-importer' );
+	}
+
+	/* Disable external entity loading for security */
+	$prev = libxml_use_internal_errors( true );
+	if ( PHP_VERSION_ID < 80000 ) {
+		$disent = libxml_disable_entity_loader( true ); // phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.libxml_disable_entity_loaderDeprecated -- Needed for security on PHP < 8.0.
+	}
+	$xml = simplexml_load_string( $raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NONET );
+	if ( PHP_VERSION_ID < 80000 ) {
+		libxml_disable_entity_loader( $disent ); // phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.libxml_disable_entity_loaderDeprecated
+	}
+	libxml_clear_errors();
+	libxml_use_internal_errors( $prev );
+
+	if ( false === $xml ) {
+		return esc_html__( 'Invalid XML format.', 'the-simplest-importer' );
+	}
+
+	/* Determine item elements */
+	$items = array();
+
+	/* Try WXR: <rss><channel><item> */
+	if ( isset( $xml->channel->item ) && count( $xml->channel->item ) > 0 ) {
+		foreach ( $xml->channel->item as $item ) {
+			$items[] = $item;
+		}
+	}
+
+	/* Try direct children (all same tag name, e.g. <items><item>) */
+	if ( empty( $items ) ) {
+		$children   = $xml->children();
+		$tag_counts = array();
+		foreach ( $children as $child ) {
+			$name = $child->getName();
+			if ( ! isset( $tag_counts[ $name ] ) ) {
+				$tag_counts[ $name ] = 0;
+			}
+			++$tag_counts[ $name ];
+		}
+		/* Use the most common repeating child tag */
+		if ( ! empty( $tag_counts ) ) {
+			arsort( $tag_counts );
+			$best_tag = key( $tag_counts );
+			if ( $tag_counts[ $best_tag ] > 1 ) {
+				foreach ( $children as $child ) {
+					if ( $child->getName() === $best_tag ) {
+						$items[] = $child;
+					}
+				}
+			}
+		}
+	}
+
+	/* Last resort: if root has exactly one child that is a wrapper, go one level deeper */
+	if ( empty( $items ) && 1 === count( $xml->children() ) ) {
+		$wrapper = $xml->children()[0];
+		foreach ( $wrapper->children() as $child ) {
+			$items[] = $child;
+		}
+	}
+
+	if ( empty( $items ) ) {
+		return esc_html__( 'Could not find repeating item elements in XML.', 'the-simplest-importer' );
+	}
+
+	/* Collect all unique element names and convert to flat rows */
+	$all_keys  = array();
+	$flat_rows = array();
+
+	foreach ( $items as $item ) {
+		$flat = array();
+		tsi_xml_element_to_flat( $item, $flat, '' );
+		$flat_rows[] = $flat;
+		foreach ( array_keys( $flat ) as $k ) {
+			$all_keys[ $k ] = true;
+		}
+	}
+
+	if ( empty( $flat_rows ) ) {
+		return esc_html__( 'XML items contain no data.', 'the-simplest-importer' );
+	}
+
+	$headers = array_keys( $all_keys );
+
+	$rows = array();
+	foreach ( $flat_rows as $flat ) {
+		$row = array();
+		foreach ( $headers as $h ) {
+			$row[] = isset( $flat[ $h ] ) ? (string) $flat[ $h ] : '';
+		}
+		$rows[] = $row;
+	}
+
+	/** This filter is documented in tsi_read_csv_file */
+	$csv_data = apply_filters( 'tsi_csv_parsed', array(
+		'headers'   => $headers,
+		'rows'      => $rows,
+		'delimiter' => 'xml',
+	) );
+
+	$headers = $csv_data['headers'];
+	$rows    = $csv_data['rows'];
+
+	$token = wp_generate_password( 20, false );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
+
+	return array(
+		'headers'   => $headers,
+		'row_count' => count( $rows ),
+		'preview'   => array_slice( $rows, 0, 5 ),
+		'token'     => $token,
+		'delimiter' => 'xml',
+	);
+}
+
+/**
+ * Recursively flatten a SimpleXMLElement into key-value pairs.
+ *
+ * Child element names become dot-separated keys (e.g. address.city).
+ *
+ * @param SimpleXMLElement $element The XML element.
+ * @param array            $result  The flat result array (passed by reference).
+ * @param string           $prefix  The current key prefix.
+ * @return void
+ */
+function tsi_xml_element_to_flat( $element, &$result, $prefix ) {
+	$children = $element->children();
+	if ( 0 === count( $children ) ) {
+		$key = '' !== $prefix ? $prefix : $element->getName();
+		$result[ $key ] = trim( (string) $element );
+		return;
+	}
+	foreach ( $children as $child ) {
+		$name     = $child->getName();
+		$full_key = '' !== $prefix ? $prefix . '.' . $name : $name;
+		if ( count( $child->children() ) > 0 ) {
+			tsi_xml_element_to_flat( $child, $result, $full_key );
+		} else {
+			$result[ $full_key ] = trim( (string) $child );
+		}
+	}
+}
+
+/**
+ * Detect file format and call the appropriate reader.
+ *
+ * @param string $filepath  Absolute path to the file.
+ * @param string $extension File extension hint (csv, json, xml). Empty for auto-detect.
+ * @return array|string Parsed data array on success, error message on failure.
+ */
+function tsi_read_import_file( $filepath, $extension = '' ) {
+	if ( '' === $extension ) {
+		$extension = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
+	}
+
+	switch ( $extension ) {
+		case 'json':
+			return tsi_read_json_file( $filepath );
+		case 'xml':
+			return tsi_read_xml_file( $filepath );
+		default:
+			return tsi_read_csv_file( $filepath );
+	}
+}
+
+/**
  * Convert a Google Sheets URL to its CSV export equivalent.
  *
  * Accepts formats:
@@ -1150,14 +1490,18 @@ function tsi_ajax_export() {
 		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
 	}
 
-	$export_mode = isset( $_POST['export_mode'] ) ? sanitize_key( wp_unslash( $_POST['export_mode'] ) ) : 'all';
+	$export_mode   = isset( $_POST['export_mode'] ) ? sanitize_key( wp_unslash( $_POST['export_mode'] ) ) : 'all';
+	$export_format = isset( $_POST['export_format'] ) ? sanitize_key( wp_unslash( $_POST['export_format'] ) ) : 'csv';
+	if ( ! in_array( $export_format, array( 'csv', 'xlsx' ), true ) ) {
+		$export_format = 'csv';
+	}
 
 	/* Status filter */
 	$allowed_statuses = array( 'publish', 'draft', 'pending', 'private', 'future' );
 	$export_statuses  = array();
 	if ( ! empty( $_POST['export_statuses'] ) && is_array( $_POST['export_statuses'] ) ) {
-		foreach ( $_POST['export_statuses'] as $s ) {
-			$s = sanitize_key( $s );
+		$raw_statuses = array_map( 'sanitize_key', wp_unslash( $_POST['export_statuses'] ) );
+		foreach ( $raw_statuses as $s ) {
 			if ( in_array( $s, $allowed_statuses, true ) ) {
 				$export_statuses[] = $s;
 			}
@@ -1166,9 +1510,10 @@ function tsi_ajax_export() {
 
 	/* Selective columns */
 	$selected_fields = array();
-	if ( ! empty( $_POST['export_fields'] ) && is_array( $_POST['export_fields'] ) ) {
-		foreach ( $_POST['export_fields'] as $f ) {
-			$selected_fields[] = sanitize_text_field( wp_unslash( $f ) );
+	$raw_fields      = isset( $_POST['export_fields'] ) ? wp_unslash( $_POST['export_fields'] ) : array();
+	if ( is_array( $raw_fields ) && ! empty( $raw_fields ) ) {
+		foreach ( $raw_fields as $f ) {
+			$selected_fields[] = sanitize_text_field( $f );
 		}
 	}
 
@@ -1264,12 +1609,8 @@ function tsi_ajax_export() {
 		$header[] = 'meta__' . $m;
 	}
 
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Using php://temp for in-memory CSV generation.
-	$output = fopen( 'php://temp', 'r+' );
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writing UTF-8 BOM to in-memory stream.
-	fwrite( $output, "\xEF\xBB\xBF" );
-	fputcsv( $output, $header );
-
+	/* Collect all rows for export */
+	$all_rows = array();
 	foreach ( $posts as $p ) {
 		$row = array();
 		foreach ( $core_keys as $ck ) {
@@ -1283,22 +1624,10 @@ function tsi_ajax_export() {
 			$val   = get_post_meta( $p->ID, $m, true );
 			$row[] = is_array( $val ) ? wp_json_encode( $val ) : ( isset( $val ) ? (string) $val : '' );
 		}
-		/**
-		 * Filter a single export row before writing to CSV.
-		 *
-		 * @param array   $row    The row values.
-		 * @param WP_Post $p      The post object.
-		 * @param array   $header The CSV header row.
-		 */
-		$row = apply_filters( 'tsi_export_row', $row, $p, $header );
-
-		fputcsv( $output, $row );
+		/** This filter is documented above. */
+		$row        = apply_filters( 'tsi_export_row', $row, $p, $header );
+		$all_rows[] = $row;
 	}
-
-	rewind( $output );
-	$csv_string = stream_get_contents( $output );
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://temp in-memory stream.
-	fclose( $output );
 
 	/**
 	 * Fires after an export completes.
@@ -1308,11 +1637,188 @@ function tsi_ajax_export() {
 	 */
 	do_action( 'tsi_export_completed', $post_type, count( $posts ) );
 
+	if ( 'xlsx' === $export_format && class_exists( 'ZipArchive' ) ) {
+		$xlsx_data = tsi_generate_xlsx( $header, $all_rows );
+		if ( $xlsx_data ) {
+			wp_send_json_success( array(
+				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Base64 needed to transport binary through JSON.
+				'csv'      => base64_encode( $xlsx_data ),
+				'filename' => sanitize_file_name( $post_type . '-export-' . gmdate( 'Y-m-d' ) . '.xlsx' ),
+				'mime'     => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			) );
+		}
+		/* Fall through to CSV if XLSX generation failed */
+	}
+
+	/* CSV output */
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Using php://temp for in-memory CSV generation.
+	$output = fopen( 'php://temp', 'r+' );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writing UTF-8 BOM to in-memory stream.
+	fwrite( $output, "\xEF\xBB\xBF" );
+	fputcsv( $output, $header );
+	foreach ( $all_rows as $row ) {
+		fputcsv( $output, $row );
+	}
+	rewind( $output );
+	$csv_string = stream_get_contents( $output );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://temp in-memory stream.
+	fclose( $output );
+
 	wp_send_json_success( array(
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Base64 needed to transport CSV binary through JSON.
 		'csv'      => base64_encode( $csv_string ),
 		'filename' => sanitize_file_name( $post_type . '-export-' . gmdate( 'Y-m-d' ) . '.csv' ),
 	) );
+}
+
+/* ------------------------------------------------------------------
+ * Helper — Generate minimal XLSX from header + rows
+ * ------------------------------------------------------------------ */
+
+/**
+ * Generate a minimal valid XLSX file using ZipArchive.
+ *
+ * Creates a standards-compliant Open XML spreadsheet without any
+ * external dependencies. Requires the ZipArchive PHP extension.
+ *
+ * @param array $header Column header strings.
+ * @param array $rows   Array of row arrays (each row is an indexed array of cell values).
+ * @return string|false Binary XLSX data on success, false on failure.
+ */
+function tsi_generate_xlsx( $header, $rows ) {
+	if ( ! class_exists( 'ZipArchive' ) ) {
+		return false;
+	}
+
+	$tmp_file = wp_tempnam( 'tsi_xlsx_' );
+
+	$zip = new ZipArchive();
+	if ( true !== $zip->open( $tmp_file, ZipArchive::CREATE | ZipArchive::OVERWRITE ) ) {
+		return false;
+	}
+
+	/* [Content_Types].xml */
+	$zip->addFromString( '[Content_Types].xml',
+		'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' .
+		'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' .
+		'<Default Extension="xml" ContentType="application/xml"/>' .
+		'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' .
+		'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' .
+		'<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' .
+		'</Types>'
+	);
+
+	/* _rels/.rels */
+	$zip->addFromString( '_rels/.rels',
+		'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
+		'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' .
+		'</Relationships>'
+	);
+
+	/* xl/_rels/workbook.xml.rels */
+	$zip->addFromString( 'xl/_rels/workbook.xml.rels',
+		'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
+		'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' .
+		'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' .
+		'</Relationships>'
+	);
+
+	/* xl/workbook.xml */
+	$zip->addFromString( 'xl/workbook.xml',
+		'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' .
+		'<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>' .
+		'</workbook>'
+	);
+
+	/* Build shared strings table and sheet data */
+	$strings     = array();
+	$string_map  = array();
+	$string_idx  = 0;
+
+	/**
+	 * Map a cell value to a shared string index.
+	 */
+	$get_string_index = function ( $val ) use ( &$strings, &$string_map, &$string_idx ) {
+		$val = (string) $val;
+		if ( ! isset( $string_map[ $val ] ) ) {
+			$string_map[ $val ] = $string_idx;
+			$strings[]          = $val;
+			++$string_idx;
+		}
+		return $string_map[ $val ];
+	};
+
+	/* Sheet XML */
+	$sheet_xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' .
+		'<sheetData>';
+
+	/* Header row */
+	$sheet_xml .= '<row r="1">';
+	foreach ( $header as $c => $cell ) {
+		$col_letter = tsi_xlsx_col_letter( $c );
+		$si         = $get_string_index( $cell );
+		$sheet_xml .= '<c r="' . $col_letter . '1" t="s"><v>' . $si . '</v></c>';
+	}
+	$sheet_xml .= '</row>';
+
+	/* Data rows */
+	foreach ( $rows as $r => $row ) {
+		$row_num    = $r + 2;
+		$sheet_xml .= '<row r="' . $row_num . '">';
+		foreach ( $row as $c => $cell ) {
+			$col_letter = tsi_xlsx_col_letter( $c );
+			$cell_str   = (string) $cell;
+
+			/* Numeric values stored as numbers for Excel calculation support */
+			if ( '' !== $cell_str && is_numeric( $cell_str ) && strlen( $cell_str ) < 15 ) {
+				$sheet_xml .= '<c r="' . $col_letter . $row_num . '"><v>' . esc_html( $cell_str ) . '</v></c>';
+			} else {
+				$si         = $get_string_index( $cell_str );
+				$sheet_xml .= '<c r="' . $col_letter . $row_num . '" t="s"><v>' . $si . '</v></c>';
+			}
+		}
+		$sheet_xml .= '</row>';
+	}
+
+	$sheet_xml .= '</sheetData></worksheet>';
+	$zip->addFromString( 'xl/worksheets/sheet1.xml', $sheet_xml );
+
+	/* xl/sharedStrings.xml */
+	$ss_xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' .
+		'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . count( $strings ) . '" uniqueCount="' . count( $strings ) . '">';
+	foreach ( $strings as $s ) {
+		$ss_xml .= '<si><t>' . esc_html( $s ) . '</t></si>';
+	}
+	$ss_xml .= '</sst>';
+	$zip->addFromString( 'xl/sharedStrings.xml', $ss_xml );
+
+	$zip->close();
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- Reading temp XLSX file for base64 encoding.
+	$data = file_get_contents( $tmp_file );
+	wp_delete_file( $tmp_file );
+
+	return $data;
+}
+
+/**
+ * Convert a zero-based column index to an Excel column letter (A, B, ..., Z, AA, AB, ...).
+ *
+ * @param int $index Zero-based column index.
+ * @return string Column letter(s).
+ */
+function tsi_xlsx_col_letter( $index ) {
+	$letter = '';
+	while ( $index >= 0 ) {
+		$letter = chr( 65 + ( $index % 26 ) ) . $letter;
+		$index  = intdiv( $index, 26 ) - 1;
+	}
+	return $letter;
 }
 
 /**
@@ -1413,6 +1919,7 @@ function tsi_ajax_import_batch() {
 	$import_mode = isset( $_POST['import_mode'] ) ? sanitize_key( wp_unslash( $_POST['import_mode'] ) ) : 'insert';
 	$history_id  = isset( $_POST['history_id'] ) ? sanitize_text_field( wp_unslash( $_POST['history_id'] ) ) : '';
 	$filters_raw = isset( $_POST['filters'] ) ? wp_unslash( $_POST['filters'] ) : '[]'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
+	$retry_rows_raw = isset( $_POST['retry_rows'] ) ? wp_unslash( $_POST['retry_rows'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
 
 	if ( ! $token || ! $post_type ) {
 		wp_send_json_error( esc_html__( 'Missing parameters.', 'the-simplest-importer' ) );
@@ -1430,8 +1937,38 @@ function tsi_ajax_import_batch() {
 	}
 
 	$headers = $data['headers'];
-	$total   = count( $data['rows'] );
-	$rows    = array_slice( $data['rows'], $offset, $batch_size );
+
+	/* Retry mode: only process specific row indices */
+	$retry_indices = array();
+	if ( '' !== $retry_rows_raw ) {
+		$retry_indices = json_decode( $retry_rows_raw, true );
+		if ( ! is_array( $retry_indices ) ) {
+			$retry_indices = array();
+		}
+		$retry_indices = array_map( 'absint', $retry_indices );
+	}
+
+	if ( ! empty( $retry_indices ) ) {
+		$all_retry_rows = array();
+		foreach ( $retry_indices as $ri ) {
+			if ( isset( $data['rows'][ $ri ] ) ) {
+				$all_retry_rows[ $ri ] = $data['rows'][ $ri ];
+			}
+		}
+		$total       = count( $all_retry_rows );
+		$retry_keys  = array_keys( $all_retry_rows );
+		$batch_keys  = array_slice( $retry_keys, $offset, $batch_size );
+		$rows        = array();
+		$row_indices = array();
+		foreach ( $batch_keys as $bk ) {
+			$rows[]        = $all_retry_rows[ $bk ];
+			$row_indices[] = $bk;
+		}
+	} else {
+		$total       = count( $data['rows'] );
+		$rows        = array_slice( $data['rows'], $offset, $batch_size );
+		$row_indices = range( $offset, $offset + count( $rows ) - 1 );
+	}
 
 	$mapping = json_decode( $mapping, true );
 	if ( ! is_array( $mapping ) ) {
@@ -1468,15 +2005,17 @@ function tsi_ajax_import_batch() {
 		}
 	}
 
-	$log      = array();
-	$inserted = 0;
-	$updated  = 0;
-	$skipped  = 0;
-	$errors   = 0;
-	$post_ids = array();
+	$log         = array();
+	$inserted    = 0;
+	$updated     = 0;
+	$skipped     = 0;
+	$errors      = 0;
+	$post_ids    = array();
+	$failed_rows = array();
 
 	foreach ( $rows as $i => $row ) {
-		$row_num = $offset + $i + 2; // +2: header is row 1, data starts at row 2.
+		$row_num   = $row_indices[ $i ] + 2; // +2: header is row 1, data starts at row 2.
+		$row_index = $row_indices[ $i ];
 
 		/* Conditional row filtering — skip rows that don't match all rules */
 		if ( ! empty( $clean_filters ) ) {
@@ -1518,6 +2057,7 @@ function tsi_ajax_import_batch() {
 				break;
 			default:
 				$errors++;
+				$failed_rows[] = $row_index;
 				break;
 		}
 	}
@@ -1526,7 +2066,10 @@ function tsi_ajax_import_batch() {
 	$done        = $next_offset >= $total;
 
 	if ( $done ) {
-		delete_transient( 'tsi_csv_data_' . $token );
+		/* Keep transient alive when there are failed rows for potential retry */
+		if ( empty( $failed_rows ) ) {
+			delete_transient( 'tsi_csv_data_' . $token );
+		}
 
 		/* Record import in history (skip for dry runs) */
 		if ( ! $dry_run && ( $inserted > 0 || $updated > 0 ) ) {
@@ -1554,17 +2097,18 @@ function tsi_ajax_import_batch() {
 	}
 
 	wp_send_json_success( array(
-		'offset'     => $next_offset,
-		'total'      => $total,
-		'done'       => $done,
-		'log'        => $log,
-		'inserted'   => $inserted,
-		'updated'    => $updated,
-		'skipped'    => $skipped,
-		'errors'     => $errors,
-		'post_ids'   => $post_ids,
-		'history_id' => $history_id ? $history_id : '',
-		'dry_run'    => $dry_run,
+		'offset'      => $next_offset,
+		'total'       => $total,
+		'done'        => $done,
+		'log'         => $log,
+		'inserted'    => $inserted,
+		'updated'     => $updated,
+		'skipped'     => $skipped,
+		'errors'      => $errors,
+		'post_ids'    => $post_ids,
+		'history_id'  => $history_id ? $history_id : '',
+		'dry_run'     => $dry_run,
+		'failed_rows' => $failed_rows,
 	) );
 }
 
@@ -1624,10 +2168,11 @@ function tsi_sanitize_mapping( $mapping, $col_max ) {
  * @return array { status: string, message: string, post_id: int }
  */
 function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run = false, $dup_field = '', $dup_meta = '', $transforms = array() ) {
-	$post_data = array( 'post_type' => $post_type );
-	$meta_data = array();
-	$tax_data  = array();
-	$thumb_url = '';
+	$post_data    = array( 'post_type' => $post_type );
+	$meta_data    = array();
+	$tax_data     = array();
+	$thumb_url    = '';
+	$gallery_urls = '';
 
 	/**
 	 * Fires before a single CSV row is imported.
@@ -1671,6 +2216,8 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			}
 		} elseif ( '_thumbnail_url' === $field ) {
 			$thumb_url = esc_url_raw( $value );
+		} elseif ( '_product_gallery_urls' === $field ) {
+			$gallery_urls = sanitize_text_field( $value );
 		} elseif ( 0 === strpos( $field, 'tax__' ) ) {
 			$tax_slug = sanitize_key( substr( $field, 5 ) );
 			$terms    = array_map( 'trim', explode( ',', $value ) );
@@ -1694,16 +2241,18 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	 * @param int    $row_num   Row number in the CSV.
 	 */
 	$import_row_data = apply_filters( 'tsi_import_row_data', array(
-		'post_data' => $post_data,
-		'meta_data' => $meta_data,
-		'tax_data'  => $tax_data,
-		'thumb_url' => $thumb_url,
+		'post_data'    => $post_data,
+		'meta_data'    => $meta_data,
+		'tax_data'     => $tax_data,
+		'thumb_url'    => $thumb_url,
+		'gallery_urls' => $gallery_urls,
 	), $row, $row_num, $post_type );
 
-	$post_data = $import_row_data['post_data'];
-	$meta_data = $import_row_data['meta_data'];
-	$tax_data  = $import_row_data['tax_data'];
-	$thumb_url = $import_row_data['thumb_url'];
+	$post_data    = $import_row_data['post_data'];
+	$meta_data    = $import_row_data['meta_data'];
+	$tax_data     = $import_row_data['tax_data'];
+	$thumb_url    = $import_row_data['thumb_url'];
+	$gallery_urls = $import_row_data['gallery_urls'];
 
 	/* Determine insert vs. update */
 	$is_update = false;
@@ -1785,13 +2334,48 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	}
 
 	foreach ( $tax_data as $tax => $terms ) {
-		if ( taxonomy_exists( $tax ) ) {
-			wp_set_object_terms( $post_id, $terms, $tax );
+		if ( ! taxonomy_exists( $tax ) ) {
+			continue;
+		}
+		$is_hierarchical = is_taxonomy_hierarchical( $tax );
+		$term_ids        = array();
+
+		foreach ( $terms as $term_string ) {
+			if ( $is_hierarchical && false !== strpos( $term_string, '>' ) ) {
+				/* Hierarchical: "Parent > Child > Grandchild" */
+				$parts     = array_map( 'trim', explode( '>', $term_string ) );
+				$parts     = array_filter( $parts );
+				$parent_id = 0;
+				foreach ( $parts as $part ) {
+					$existing = term_exists( $part, $tax, $parent_id );
+					if ( $existing ) {
+						$parent_id = (int) $existing['term_id'];
+					} else {
+						$inserted_term = wp_insert_term( $part, $tax, array( 'parent' => $parent_id ) );
+						if ( ! is_wp_error( $inserted_term ) ) {
+							$parent_id = (int) $inserted_term['term_id'];
+						}
+					}
+				}
+				if ( $parent_id ) {
+					$term_ids[] = $parent_id;
+				}
+			} else {
+				$term_ids[] = $term_string;
+			}
+		}
+
+		if ( ! empty( $term_ids ) ) {
+			wp_set_object_terms( $post_id, $term_ids, $tax );
 		}
 	}
 
 	if ( $thumb_url ) {
 		tsi_set_featured_image( $post_id, $thumb_url );
+	}
+
+	if ( $gallery_urls ) {
+		tsi_set_product_gallery( $post_id, $gallery_urls );
 	}
 
 	/**
@@ -1857,6 +2441,62 @@ function tsi_set_featured_image( $post_id, $url ) {
 }
 
 /* ------------------------------------------------------------------
+ * Helper — Set product image gallery from URLs
+ * ------------------------------------------------------------------ */
+
+/**
+ * Download images from comma-separated URLs and store as a product gallery.
+ *
+ * Stores pipe-separated attachment IDs in `_product_image_gallery` meta key,
+ * compatible with WooCommerce. Works for any post type.
+ *
+ * @param int    $post_id     The post to attach the gallery to.
+ * @param string $gallery_csv Comma-separated image URLs.
+ * @return void
+ */
+function tsi_set_product_gallery( $post_id, $gallery_csv ) {
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+
+	$urls = array_map( 'trim', explode( ',', $gallery_csv ) );
+	$urls = array_filter( $urls );
+	if ( empty( $urls ) ) {
+		return;
+	}
+
+	$attachment_ids = array();
+	foreach ( $urls as $url ) {
+		$url = esc_url_raw( $url );
+		if ( ! wp_http_validate_url( $url ) ) {
+			continue;
+		}
+
+		$tmp = download_url( $url );
+		if ( is_wp_error( $tmp ) ) {
+			continue;
+		}
+
+		$file_array = array(
+			'name'     => sanitize_file_name( basename( wp_parse_url( $url, PHP_URL_PATH ) ) ),
+			'tmp_name' => $tmp,
+		);
+
+		$attach_id = media_handle_sideload( $file_array, $post_id );
+		if ( is_wp_error( $attach_id ) ) {
+			wp_delete_file( $tmp );
+			continue;
+		}
+
+		$attachment_ids[] = $attach_id;
+	}
+
+	if ( ! empty( $attachment_ids ) ) {
+		update_post_meta( $post_id, '_product_image_gallery', implode( ',', $attachment_ids ) );
+	}
+}
+
+/* ------------------------------------------------------------------
  * Helper — Apply field transform
  * ------------------------------------------------------------------ */
 
@@ -1910,6 +2550,7 @@ function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_d
 	global $wpdb;
 
 	if ( 'post_title' === $field && ! empty( $post_data['post_title'] ) ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off duplicate check during import, caching not applicable.
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title = %s AND post_status != 'trash' LIMIT 1",
@@ -1921,6 +2562,7 @@ function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_d
 	}
 
 	if ( 'post_name' === $field && ! empty( $post_data['post_name'] ) ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off duplicate check during import, caching not applicable.
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_name = %s AND post_status != 'trash' LIMIT 1",
@@ -1932,6 +2574,7 @@ function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_d
 	}
 
 	if ( 'meta_key' === $field && $meta_key && ! empty( $meta_data[ $meta_key ] ) ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off duplicate check during import, caching not applicable.
 		$found = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p.ID FROM {$wpdb->posts} p
@@ -2481,6 +3124,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'error';
+		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to fetch CSV from URL.', 'the-simplest-importer' );
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
 		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to fetch CSV from URL.', 'the-simplest-importer' ) );
 		return;
@@ -2488,17 +3132,28 @@ function tsi_run_scheduled_import( $schedule_id ) {
 
 	$body = wp_remote_retrieve_body( $response );
 
-	/* Write to temp file so we can reuse tsi_read_csv_file() with delimiter auto-detection. */
+	/* Write to temp file so we can reuse the file readers with format auto-detection. */
 	$tmp = wp_tempnam( 'tsi_sched_' );
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for CSV parsing.
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for import parsing.
 	file_put_contents( $tmp, $body );
 
-	$parsed = tsi_read_csv_file( $tmp );
+	/* Detect format from URL extension or Content-Type */
+	$url_ext      = strtolower( pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+	$content_type = wp_remote_retrieve_header( $response, 'content-type' );
+	$format       = 'csv';
+	if ( 'json' === $url_ext || false !== strpos( $content_type, 'json' ) ) {
+		$format = 'json';
+	} elseif ( 'xml' === $url_ext || false !== strpos( $content_type, 'xml' ) ) {
+		$format = 'xml';
+	}
+
+	$parsed = tsi_read_import_file( $tmp, $format );
 	wp_delete_file( $tmp );
 
 	if ( is_string( $parsed ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'error';
+		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to parse CSV data.', 'the-simplest-importer' );
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
 		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to parse CSV data.', 'the-simplest-importer' ) );
 		return;
@@ -2512,6 +3167,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	if ( ! $csv_data || empty( $csv_data['rows'] ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'empty';
+		$schedules[ $schedule_id ]['last_error']  = __( 'CSV file was empty or contained no data rows.', 'the-simplest-importer' );
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
 		tsi_send_schedule_email( $schedule, esc_html__( 'CSV file was empty or contained no data rows.', 'the-simplest-importer' ) );
 		return;
@@ -2548,6 +3204,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	if ( empty( $mapping ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'no_mapping';
+		$schedules[ $schedule_id ]['last_error']  = __( 'No column mapping could be determined.', 'the-simplest-importer' );
 		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
 		tsi_send_schedule_email( $schedule, esc_html__( 'No column mapping could be determined.', 'the-simplest-importer' ) );
 		return;
@@ -2585,6 +3242,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 	$schedules[ $schedule_id ]['last_status'] = 'success';
 	$schedules[ $schedule_id ]['last_count']  = $inserted + $updated;
+	$schedules[ $schedule_id ]['last_error']  = '';
 	update_option( TSI_SCHEDULES_OPTION, $schedules, false );
 
 	/* Send email notification if configured */

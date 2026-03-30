@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - Unreleased
+
+### Added
+- XML and JSON import — import data from XML (including WordPress WXR format) and JSON files alongside CSV. Auto-detects format from file extension and MIME type.
+- Excel XLSX export — export data as .xlsx spreadsheets using PHP ZipArchive. Falls back to CSV if ZipArchive is unavailable.
+- Product image gallery — import WooCommerce product gallery images from comma-separated URLs via `_product_gallery_urls` field.
+- Hierarchical taxonomy import — use `>` separator to create nested term hierarchies (e.g., `Parent > Child > Grandchild`). Parent terms are created automatically if they don't exist.
+- Error row retry — after import, retry only the rows that failed without re-importing the entire file. Transient data is preserved for retry.
+- Real-time mapping preview — live preview panel in the mapping step showing how the first data row maps to WordPress fields.
+- Import progress ETA — estimated time remaining displayed during batch import processing.
+- Scheduled import error logging — last error details stored per schedule and shown as tooltip in the schedule list.
+- Accessibility improvements — `role="progressbar"` with ARIA attributes on progress bar, `aria-live` on live log and overlay, `role="alert"` on validation results, `role="dialog"` on overlay, ESC key closes overlay, `:focus-visible` styles for keyboard navigation.
+
 ## [1.2.0] - Unreleased
 
 ### Added

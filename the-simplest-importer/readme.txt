@@ -3,12 +3,12 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Import, export, and manage WordPress posts and custom post types via CSV with visual column mapping and batch processing.
+Import, export, and manage WordPress posts and custom post types via CSV, JSON, and XML with visual column mapping and batch processing.
 
 == Description ==
 
@@ -51,6 +51,15 @@ Import, export, and manage WordPress posts and custom post types via CSV with vi
 * **Scheduled Exports** — Set up recurring WP-Cron exports with files saved to uploads and optionally emailed as attachments.
 * **Single Post Export** — Export any individual post as CSV from its edit screen via a meta box.
 * **Enhanced Developer Hooks** — 8 new filters and actions for CSV parsing, export columns, export rows, import rows, and more.
+* **XML & JSON Import** — Import data from XML (including WXR) and JSON files alongside CSV.
+* **Excel XLSX Export** — Export data as Excel spreadsheets (requires PHP ZipArchive extension).
+* **Product Image Gallery** — Import WooCommerce product gallery images from comma-separated URLs.
+* **Hierarchical Taxonomy Import** — Use `>` separator to create nested term hierarchies (e.g., `Parent > Child > Grandchild`).
+* **Error Row Retry** — After import, retry only the rows that failed without re-importing the entire file.
+* **Real-time Mapping Preview** — See a live preview of how the first row will be mapped as you configure fields.
+* **Import Progress ETA** — Real-time estimated time remaining during batch imports.
+* **Scheduled Import Error Logging** — View last error details for scheduled imports that failed.
+* **Accessibility** — Improved keyboard navigation, ARIA attributes, and screen reader support throughout.
 
 **Supported Post Types:**
 
@@ -108,6 +117,17 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 
 == Changelog ==
 
+= 1.3.0 =
+* Added: XML and JSON import support — import from XML (including WXR format) and JSON files alongside CSV.
+* Added: Excel XLSX export — export data as .xlsx spreadsheets (requires PHP ZipArchive extension, falls back to CSV).
+* Added: Product image gallery — import WooCommerce product gallery images from comma-separated URLs via `_product_gallery_urls` field.
+* Added: Hierarchical taxonomy import — use `>` separator to create nested term hierarchies (e.g., `Parent > Child > Grandchild`).
+* Added: Error row retry — after import, retry only the rows that failed without re-importing the entire file.
+* Added: Real-time mapping preview — live preview panel showing how the first CSV row maps to WordPress fields.
+* Added: Import progress ETA — estimated time remaining displayed during batch import processing.
+* Added: Scheduled import error logging — last error details stored and shown as tooltip on scheduled imports.
+* Improved: Accessibility — ARIA attributes on progress bar, live log, validation results, and overlay dialog. ESC key closes overlay. Focus-visible styles for keyboard navigation.
+
 = 1.2.0 =
 * Added: ACF support — auto-detects Advanced Custom Fields, uses `update_field()` for proper data handling.
 * Added: SEO meta support — auto-detects Yoast SEO and Rank Math, adds SEO title/description/focus keyword fields.
@@ -144,7 +164,10 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 * Visual column mapping with smart auto-matching.
 * Batch import with real-time progress bar.
 * Drag & drop CSV upload and remote URL fetch.
-* Data preview before import.
+* Da3.0 =
+New: XML & JSON import, Excel XLSX export, product gallery import, hierarchical taxonomy support, error row retry, mapping preview, progress ETA, and accessibility improvements.
+
+= 1.ta preview before import.
 * Custom static values and on-the-fly custom fields.
 * Insert or update posts by ID.
 * Detailed per-row import log.
