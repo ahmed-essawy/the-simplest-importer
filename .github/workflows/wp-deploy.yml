@@ -1,0 +1,53 @@
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_SLUG: the-simplest-importer
+
+jobs:
+  deploy:
+    name: Deploy to WP.org SVN
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify version consistency
+        run: |
+          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+          RELEASE_TAG="${RELEASE_TAG#v}"
+          PHP_VERSION=$(grep -oP "Version:\s*\K[0-9.]+" "$PLUGIN_SLUG/$PLUGIN_SLUG.php")
+          README_VERSION=$(grep -oP "Stable tag:\s*\K[0-9.]+" "$PLUGIN_SLUG/readme.txt")
+          echo "Release tag: $RELEASE_TAG"
+          echo "PHP header:  $PHP_VERSION"
+          echo "readme.txt:  $README_VERSION"
+          if [ "$RELEASE_TAG" != "$PHP_VERSION" ] || [ "$RELEASE_TAG" != "$README_VERSION" ]; then
+            echo "::error::Version mismatch! Tag=$RELEASE_TAG, PHP=$PHP_VERSION, readme=$README_VERSION"
+            exit 1
+          fi
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: wp-cli
+
+      - name: Generate POT file
+        run: |
+          wp i18n make-pot "$PLUGIN_SLUG" "$PLUGIN_SLUG/languages/$PLUGIN_SLUG.pot" \
+            --slug="$PLUGIN_SLUG" \
+            --headers='{"Report-Msgid-Bugs-To":"https://github.com/ahmed-essawy/the-simplest-importer/issues"}'
+
+      - name: Deploy to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ${{ env.PLUGIN_SLUG }}
+          BUILD_DIR: ${{ env.PLUGIN_SLUG }}
