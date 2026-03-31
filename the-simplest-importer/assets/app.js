@@ -32,6 +32,56 @@
 	var firstPreviewRow  = [];
 
 	/* ================================================================
+	 * Dark Mode Toggle
+	 * ================================================================ */
+
+	(function initDarkMode() {
+		var $wrap   = $('.tsi-wrap');
+		var $toggle = $('#tsi-dark-toggle');
+		var $icon   = $toggle.find('.dashicons');
+		var stored  = localStorage.getItem('tsi_dark_mode');
+
+		if (stored === '1') {
+			$wrap.addClass('tsi-wrap--dark');
+			$icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+		}
+
+		$toggle.on('click', function () {
+			var isDark = $wrap.toggleClass('tsi-wrap--dark').hasClass('tsi-wrap--dark');
+			localStorage.setItem('tsi_dark_mode', isDark ? '1' : '0');
+			$icon.toggleClass('dashicons-visibility', !isDark)
+			     .toggleClass('dashicons-hidden', isDark);
+		});
+	})();
+
+	/* ================================================================
+	 * Field Search in Mapping Table
+	 * ================================================================ */
+
+	$('#tsi-field-search').on('keyup', function () {
+		var term   = $(this).val().toLowerCase();
+		var $rows  = $('#tsi-mapping-table tbody tr');
+		var total  = $rows.length;
+		var shown  = 0;
+
+		$rows.each(function () {
+			var label = $(this).find('.tsi-col-field').text().toLowerCase();
+			var match = !term || label.indexOf(term) !== -1;
+			$(this).toggle(match);
+			if (match) {
+				shown++;
+			}
+		});
+
+		var $count = $('#tsi-field-search-count');
+		if (term) {
+			$count.text(shown + ' / ' + total).show();
+		} else {
+			$count.hide();
+		}
+	});
+
+	/* ================================================================
 	 * Step 1 — Load post types
 	 * ================================================================ */
 
@@ -554,6 +604,7 @@
 			opts += '<option value="' + idx + '"' + sel + '>' + esc(h) + '</option>';
 		});
 		opts += '<option value="__custom__">\u270E Custom value\u2026</option>';
+		opts += '<option value="__merge__">\u2702 Merge columns\u2026</option>';
 
 		var checked = matchIdx !== -1 ? ' checked' : '';
 
@@ -568,18 +619,36 @@
 		var removeBtn = isExtra ? ' <button type="button" class="button button-small tsi-remove-extra" title="Remove">&times;</button>' : '';
 		var resetBtn  = !isExtra ? ' <button type="button" class="button button-small tsi-reset-field" title="Reset to original mapping"><span class="dashicons dashicons-image-rotate"></span></button>' : '';
 
-		/* Transform dropdown (#4) */
+		/* Transform dropdown */
 		var transformOpts = '<select class="tsi-transform-select">' +
 			'<option value="">— none —</option>' +
+			'<optgroup label="Text">' +
 			'<option value="uppercase">UPPERCASE</option>' +
 			'<option value="lowercase">lowercase</option>' +
 			'<option value="titlecase">Title Case</option>' +
 			'<option value="trim">Trim whitespace</option>' +
 			'<option value="strip_tags">Strip HTML tags</option>' +
 			'<option value="slug">Slug (sanitize_title)</option>' +
+			'<option value="url_encode">URL encode</option>' +
+			'</optgroup>' +
+			'<optgroup label="Find &amp; Replace">' +
+			'<option value="find_replace">Find &amp; Replace…</option>' +
+			'<option value="prepend">Prepend text…</option>' +
+			'<option value="append">Append text…</option>' +
+			'</optgroup>' +
+			'<optgroup label="Date">' +
 			'<option value="date_ymd">Date → YYYY-MM-DD</option>' +
 			'<option value="date_dmy">Date → DD/MM/YYYY</option>' +
-			'</select>';
+			'<option value="date_mdy">Date → MM/DD/YYYY</option>' +
+			'<option value="date_iso">Date → ISO 8601</option>' +
+			'</optgroup>' +
+			'<optgroup label="Math">' +
+			'<option value="math_multiply">Multiply by…</option>' +
+			'<option value="math_add">Add number…</option>' +
+			'<option value="number_format">Format number (2 dec)</option>' +
+			'</optgroup>' +
+			'</select>' +
+			'<input type="text" class="tsi-transform-param" placeholder="" style="display:none">';
 
 		return $(
 			'<tr data-field="' + esc(fieldKey) + '" data-original-match="' + matchIdx + '"' + (isExtra ? ' class="tsi-extra-row"' : '') + '>' +
@@ -591,7 +660,8 @@
 				resetBtn +
 				removeBtn +
 				'</div>' +
-				'<input type="text" class="tsi-custom-value regular-text" placeholder="Enter static value\u2026">' +
+			'<input type="text" class="tsi-merge-template regular-text" placeholder="{first_name} {last_name}" style="display:none">' +
+				'<input type="text" class="tsi-custom-value regular-text" placeholder="Enter static value\u2026" style="display:none">' +
 			'</td>' +
 			'<td>' + transformOpts + '</td>' +
 			'</tr>'
@@ -600,7 +670,25 @@
 
 	function bindMappingEvents() {
 		var $tbody = $('#tsi-mapping-table tbody');
-		$tbody.off('change', '.tsi-col-select').off('change', '.tsi-field-check').off('click', '.tsi-remove-extra').off('click', '.tsi-reset-field');
+		$tbody.off('change', '.tsi-col-select').off('change', '.tsi-field-check').off('click', '.tsi-remove-extra').off('click', '.tsi-reset-field').off('change', '.tsi-transform-select');
+
+		var paramTransforms = {
+			find_replace:   'find|replace',
+			prepend:        'text to prepend',
+			append:         'text to append',
+			math_multiply:  'multiplier',
+			math_add:       'number to add'
+		};
+
+		$tbody.on('change', '.tsi-transform-select', function () {
+			var val    = $(this).val();
+			var $param = $(this).siblings('.tsi-transform-param');
+			if (paramTransforms[val]) {
+				$param.attr('placeholder', paramTransforms[val]).show().trigger('focus');
+			} else {
+				$param.val('').hide();
+			}
+		});
 
 		$tbody.on('change', '.tsi-col-select', function () {
 			var $row = $(this).closest('tr');
@@ -609,9 +697,15 @@
 
 			if (val === '__custom__') {
 				$row.find('.tsi-custom-value').show().trigger('focus');
+				$row.find('.tsi-merge-template').hide();
+				$cb.prop('checked', true);
+			} else if (val === '__merge__') {
+				$row.find('.tsi-merge-template').show().trigger('focus');
+				$row.find('.tsi-custom-value').hide();
 				$cb.prop('checked', true);
 			} else {
 				$row.find('.tsi-custom-value').hide();
+				$row.find('.tsi-merge-template').hide();
 				$cb.prop('checked', val !== '-1');
 			}
 			updateMappingCount();
@@ -639,6 +733,7 @@
 
 			$sel.val(String(origIdx));
 			$row.find('.tsi-custom-value').hide();
+			$row.find('.tsi-merge-template').hide();
 
 			if (parseInt(origIdx, 10) !== -1) {
 				$cb.prop('checked', true);
@@ -680,6 +775,7 @@
 			$(this).find('.tsi-field-check').prop('checked', false);
 			$(this).find('.tsi-col-select').val('-1');
 			$(this).find('.tsi-custom-value').hide();
+			$(this).find('.tsi-merge-template').hide();
 		});
 		updateMappingCount();
 	});
@@ -693,6 +789,7 @@
 
 			$sel.val(String(origIdx));
 			$(this).find('.tsi-custom-value').hide();
+			$(this).find('.tsi-merge-template').hide();
 
 			if (parseInt(origIdx, 10) !== -1) {
 				$cb.prop('checked', true);
@@ -829,6 +926,11 @@
 					source: 'custom',
 					value:  $(this).find('.tsi-custom-value').val()
 				};
+			} else if (selVal === '__merge__') {
+				mapping[fieldKey] = {
+					source:   'merge',
+					template: $(this).find('.tsi-merge-template').val()
+				};
 			} else {
 				mapping[fieldKey] = {
 					source: 'csv',
@@ -841,12 +943,14 @@
 	}
 
 	/**
-	 * Build the transforms payload from the table (#4).
+	 * Build the transform payload from the table.
 	 */
 	function buildTransformPayload() {
 		var transforms = {};
+		var paramTransforms = ['find_replace', 'prepend', 'append', 'math_multiply', 'math_add'];
+
 		$('#tsi-mapping-table tbody tr').each(function () {
-			var $cb  = $(this).find('.tsi-field-check');
+			var $cb = $(this).find('.tsi-field-check');
 			if (!$cb.is(':checked')) {
 				return;
 			}
@@ -859,9 +963,15 @@
 			}
 			var transform = $(this).find('.tsi-transform-select').val();
 			if (transform) {
-				transforms[field] = transform;
+				if ($.inArray(transform, paramTransforms) !== -1) {
+					var param = $(this).find('.tsi-transform-param').val() || '';
+					transforms[field] = { transform: transform, param: param };
+				} else {
+					transforms[field] = transform;
+				}
 			}
 		});
+
 		return transforms;
 	}
 
@@ -880,11 +990,13 @@
 			if (!$cb.is(':checked')) {
 				return;
 			}
-			var label = $(this).find('.tsi-field-label').text() || $(this).find('.tsi-extra-key').val() || '?';
+			var label = $(this).find('strong').text() || $(this).find('.tsi-extra-key').val() || '?';
 			var $sel  = $(this).find('.tsi-col-select');
 			var val   = '';
 			if ($sel.val() === '__custom__') {
 				val = $(this).find('.tsi-custom-value').val() || '';
+			} else if ($sel.val() === '__merge__') {
+				val = $(this).find('.tsi-merge-template').val() || '';
 			} else {
 				var colIdx = parseInt($sel.val(), 10);
 				if (!isNaN(colIdx) && colIdx >= 0 && colIdx < firstPreviewRow.length) {
@@ -1357,15 +1469,22 @@
 				if (pm.source === 'custom') {
 					$sel.val('__custom__');
 					$(this).find('.tsi-custom-value').val(pm.value || '').show();
+					$(this).find('.tsi-merge-template').hide();
+				} else if (pm.source === 'merge') {
+					$sel.val('__merge__');
+					$(this).find('.tsi-merge-template').val(pm.template || '').show();
+					$(this).find('.tsi-custom-value').hide();
 				} else {
 					$sel.val(String(pm.col));
 					$(this).find('.tsi-custom-value').hide();
+					$(this).find('.tsi-merge-template').hide();
 				}
 				$cb.prop('checked', true);
 			} else {
 				$sel.val('-1');
 				$cb.prop('checked', false);
 				$(this).find('.tsi-custom-value').hide();
+				$(this).find('.tsi-merge-template').hide();
 			}
 		});
 		updateMappingCount();

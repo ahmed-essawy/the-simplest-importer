@@ -3,10 +3,11 @@
 	"description": "A simple CSV importer and exporter for WordPress.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
+	"homepage": "https://github.com/ahmed-essawy/the-simplest-importer",
 	"authors": [
 		{
 			"name": "Ahmed Essawy",
-			"homepage": "https://profiles.wordpress.org/ahm.elessawy/"
+			"homepage": "https://minicad.io"
 		}
 	],
 	"require": {

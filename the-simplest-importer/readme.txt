@@ -3,7 +3,7 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -116,6 +116,17 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 6. Step 6 — Color-coded result summary with detailed log.
 
 == Changelog ==
+
+= 1.4.0 =
+* Added: Full-width dashboard layout — plugin page now uses the full available width.
+* Added: Dark mode — manual toggle with localStorage persistence. All colors refactored to CSS custom properties.
+* Added: Field search — search/filter fields in the mapping table by name.
+* Added: Post parent-child import — map post_parent field by ID or title lookup within the same post type.
+* Added: 9 extra transforms — find/replace, prepend, append, multiply, add, number format, date MM/DD/YYYY, date ISO 8601, URL encode. Parameterized transforms with inline input.
+* Added: Column merge — combine multiple CSV columns into one field using a template pattern like `{first_name} {last_name}`.
+* Added: Dashboard statistics widget — shows last 5 imports, next scheduled import/export, and link to importer on the WP Dashboard.
+* Added: View Details popup — plugin info modal accessible from the Plugins page.
+* Changed: Author URI now links to minicad.io.
 
 = 1.3.0 =
 * Added: XML and JSON import support — import from XML (including WXR format) and JSON files alongside CSV.

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - Unreleased
+
+### Added
+- Full-width dashboard layout — plugin page now uses the full available width instead of 860px max.
+- Dark mode — manual toggle button with localStorage persistence. All ~23 hardcoded colors refactored to CSS custom properties with light and dark theme definitions.
+- Field search — search/filter fields in the mapping table by name with visible count.
+- Post parent-child import — `post_parent` field supports numeric ID or title lookup within the same post type.
+- 9 extra transforms — `find_replace`, `prepend`, `append`, `math_multiply`, `math_add`, `number_format`, `date_mdy`, `date_iso`, `url_encode`. Parameterized transforms show inline input fields.
+- Column merge — combine multiple CSV columns into one WordPress field using a template like `{first_name} {last_name}`.
+- Dashboard statistics widget — shows last 5 imports, next scheduled import/export, and quick link to the importer on the WP Dashboard.
+- View Details popup — plugin information modal accessible from the Plugins page via `plugins_api` filter.
+- Plugin row meta — "View details" link added to plugin row on Plugins page.
+
+### Changed
+- Author URI updated to minicad.io.
+- Transform select organized into optgroups (Text, Find & Replace, Date, Math).
+- Transform data structure now supports parameterized transforms (`{ transform, param }` objects alongside simple strings).
+
 ## [1.3.0] - Unreleased
 
 ### Added

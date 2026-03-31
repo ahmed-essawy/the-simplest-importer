@@ -1,0 +1,545 @@
+
+/* ------------------------------------------------------------------
+ * Column Mapping Inner (select + reset button)
+ * ------------------------------------------------------------------ */
+
+.tsi-col-map-inner {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.tsi-col-map-inner .tsi-col-select {
+	flex: 1;
+}
+
+.tsi-reset-field {
+	padding: 2px 6px !important;
+	min-height: 0 !important;
+	line-height: 1 !important;
+}
+
+.tsi-reset-field .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: middle;
+}
+
+#tsi-reset-all .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+}
+
+/* ------------------------------------------------------------------
+ * Export Options
+ * ------------------------------------------------------------------ */
+
+.tsi-export-options {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+
+.tsi-export-option-wrap {
+	padding: 14px 16px;
+	border: 1px solid var(--tsi-border-lighter);
+	border-radius: 6px;
+	background: var(--tsi-bg-section);
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tsi-export-option-wrap:has(input[type="radio"]:checked) {
+	border-color: var(--tsi-color-primary);
+	background: var(--tsi-bg-highlight);
+}
+
+.tsi-export-option {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 0;
+	cursor: pointer;
+}
+
+.tsi-export-option input[type="radio"] {
+	margin: 0;
+}
+
+.tsi-export-option .description {
+	width: 100%;
+	padding-left: 26px;
+	margin-top: -4px;
+}
+
+.tsi-export-range-fields,
+.tsi-export-date-fields {
+	display: flex;
+	gap: 16px;
+	padding: 8px 0 8px 26px;
+}
+
+.tsi-export-range-fields label,
+.tsi-export-date-fields label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.tsi-export-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--tsi-border-divider);
+}
+
+.tsi-export-format {
+	min-width: 120px;
+}
+
+.tsi-export-actions .button .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: text-bottom;
+	margin-right: 2px;
+}
+
+/* ================================================================
+ * New feature styles (v1.1.0)
+ * ================================================================ */
+
+/* Delimiter badge (#11) */
+.tsi-delimiter-badge {
+	display: inline-block;
+	margin-left: 8px;
+	padding: 2px 8px;
+	background: var(--tsi-bg-delimiter);
+	border-radius: 3px;
+	font-size: 12px;
+	color: var(--tsi-text-delimiter);
+}
+
+.tsi-delimiter-badge code {
+	font-weight: 600;
+}
+
+/* Transform column */
+.tsi-transform-select {
+	width: 100%;
+	max-width: 160px;
+	font-size: 12px;
+}
+
+.tsi-transform-param {
+	display: none;
+	margin-top: 4px;
+	max-width: 160px;
+	font-size: 12px;
+	padding: 3px 6px;
+}
+
+/* Import options: dry run, duplicate check (#13, #3) */
+.tsi-import-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 12px 0;
+	padding: 12px 16px;
+	background: var(--tsi-bg-option);
+	border: 1px solid var(--tsi-border-subtle);
+	border-radius: 4px;
+}
+
+.tsi-import-options label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+#tsi-dup-options {
+	display: none;
+	margin-top: 4px;
+	padding-left: 24px;
+}
+
+#tsi-dup-options select,
+#tsi-dup-options input {
+	margin: 0 4px;
+}
+
+#tsi-dup-meta-wrap {
+	display: none;
+}
+
+/* Profile toolbar (#6) */
+.tsi-profile-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding: 8px 12px;
+	background: var(--tsi-bg-highlight);
+	border: 1px solid var(--tsi-border-profile);
+	border-radius: 4px;
+}
+
+.tsi-profile-toolbar select {
+	min-width: 180px;
+}
+
+.tsi-profile-toolbar .button {
+	white-space: nowrap;
+}
+
+/* Validation panel (#7) */
+#tsi-step-validation {
+	display: none;
+}
+
+.tsi-validation-errors h4 {
+	color: var(--tsi-color-error);
+	margin: 8px 0 4px;
+}
+
+.tsi-validation-warnings h4 {
+	color: var(--tsi-text-warning-log);
+	margin: 8px 0 4px;
+}
+
+.tsi-validation-ok {
+	color: var(--tsi-color-success);
+	font-size: 14px;
+}
+
+.tsi-validation-ok .dashicons {
+	color: var(--tsi-color-success);
+}
+
+/* Dry run log style */
+.tsi-log-dry {
+	color: var(--tsi-color-primary);
+	font-style: italic;
+}
+
+/* Dry run badge */
+.tsi-badge-dry {
+	background: var(--tsi-color-primary) !important;
+	color: var(--tsi-text-on-primary) !important;
+}
+
+/* Download log & Rollback buttons */
+#tsi-btn-download-log,
+#tsi-btn-rollback {
+	margin-top: 12px;
+	margin-right: 8px;
+}
+
+#tsi-btn-rollback {
+	color: var(--tsi-color-error);
+	border-color: var(--tsi-color-error);
+}
+
+#tsi-btn-rollback:hover {
+	background: var(--tsi-color-error);
+	color: var(--tsi-text-on-primary);
+}
+
+/* File queue indicator (#8) */
+#tsi-file-queue {
+	display: none;
+	margin: 8px 0;
+	padding: 8px 12px;
+	background: var(--tsi-bg-highlight);
+	border-left: 4px solid var(--tsi-color-primary);
+	font-size: 13px;
+}
+
+/* Export advanced options (#5, #9) */
+.tsi-export-advanced {
+	margin: 12px 0;
+}
+
+.tsi-export-advanced summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: var(--tsi-color-primary);
+	font-size: 13px;
+}
+
+.tsi-export-advanced summary:hover {
+	text-decoration: underline;
+}
+
+.tsi-export-statuses,
+.tsi-export-columns {
+	margin: 8px 0;
+	padding: 8px 12px;
+	background: var(--tsi-bg-option);
+	border: 1px solid var(--tsi-border-table-section);
+	border-radius: 4px;
+}
+
+.tsi-export-statuses label,
+.tsi-export-field-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-right: 12px;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+/* History panel (#2) */
+#tsi-step-history {
+	display: none;
+}
+
+.tsi-history-table {
+	width: 100%;
+	margin-top: 8px;
+	border-collapse: collapse;
+}
+
+.tsi-history-table th {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 2px solid var(--tsi-border-default);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.tsi-history-table td {
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--tsi-border-table-section);
+	font-size: 13px;
+}
+
+.tsi-history-rolled-back td {
+	opacity: 0.5;
+	text-decoration: line-through;
+}
+
+/* Schedule panel (#1) */
+#tsi-step-schedule {
+	display: none;
+}
+
+.tsi-schedule-table {
+	width: 100%;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	border-collapse: collapse;
+}
+
+.tsi-schedule-table th {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 2px solid var(--tsi-border-default);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.tsi-schedule-table td {
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--tsi-border-table-section);
+	font-size: 13px;
+}
+
+.tsi-schedule-error {
+	color: var(--tsi-color-error);
+	cursor: help;
+	border-bottom: 1px dashed var(--tsi-color-error);
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Preview
+ * ------------------------------------------------------------------ */
+
+.tsi-mapping-preview {
+	margin-top: 16px;
+	padding: 12px;
+	background: var(--tsi-bg-highlight);
+	border: 1px solid var(--tsi-border-default);
+	border-radius: 4px;
+}
+
+.tsi-mapping-preview h4 {
+	margin: 0 0 8px;
+	font-size: 13px;
+	color: var(--tsi-text-primary);
+}
+
+.tsi-preview-mini {
+	border-collapse: collapse;
+}
+
+.tsi-preview-mini th,
+.tsi-preview-mini td {
+	padding: 4px 8px;
+	font-size: 12px;
+	border-bottom: 1px solid var(--tsi-border-lighter);
+}
+
+.tsi-preview-mini code {
+	font-size: 11px;
+	word-break: break-all;
+}
+
+.tsi-schedule-form {
+	margin-top: 12px;
+	padding: 12px;
+	background: var(--tsi-bg-option);
+	border: 1px solid var(--tsi-border-subtle);
+	border-radius: 4px;
+}
+
+.tsi-schedule-form h4 {
+	margin: 0 0 10px;
+	font-size: 14px;
+	width: 100%;
+}
+
+.tsi-schedule-form label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.tsi-schedule-form input,
+.tsi-schedule-form select {
+	min-width: 140px;
+	max-width: 100%;
+}
+
+.tsi-schedule-form .description {
+	margin: 8px 0 4px;
+}
+
+.tsi-schedule-form .button {
+	margin-top: 8px;
+}
+
+/* Action grid — History & Schedule cards */
+.tsi-action-card--history .dashicons,
+.tsi-action-card--schedule .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+}
+
+/* Schedule fields layout */
+.tsi-schedule-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	width: 100%;
+}
+
+.tsi-schedule-fields label {
+	flex: 1 1 200px;
+	min-width: 0;
+}
+
+/* Export sections */
+.tsi-export-section {
+	margin-bottom: 12px;
+}
+
+.tsi-export-section h4 {
+	margin: 0 0 6px;
+	font-size: 13px;
+}
+
+.tsi-status-checks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+}
+
+.tsi-export-fields-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+}
+
+/* ------------------------------------------------------------------
+ * Conditional Row Filters
+ * ------------------------------------------------------------------ */
+
+.tsi-filter-section {
+	margin: 12px 0;
+	padding: 12px 16px;
+	background: var(--tsi-bg-option);
+	border: 1px solid var(--tsi-border-subtle);
+	border-radius: 4px;
+}
+
+.tsi-filter-section h4 {
+	margin: 0 0 4px;
+	font-size: 14px;
+}
+
+.tsi-filter-section > .description {
+	margin: 0 0 8px;
+}
+
+.tsi-filter-rule {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.tsi-filter-rule select {
+	min-width: 120px;
+	font-size: 12px;
+}
+
+.tsi-filter-rule .tsi-filter-value {
+	min-width: 100px;
+}
+
+.tsi-remove-filter {
+	padding: 2px 6px !important;
+	min-height: 0 !important;
+	line-height: 1 !important;
+}
+
+.tsi-remove-filter .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: middle;
+	color: var(--tsi-color-error);
+}
+
+#tsi-add-filter {
+	margin-top: 4px;
+}
+
+@media screen and (max-width: 480px) {
+	.tsi-filter-rule {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.tsi-filter-rule select,
+	.tsi-filter-rule input {
+		width: 100%;
+	}
+}

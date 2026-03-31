@@ -2,9 +2,9 @@
 
 ## Overview
 
-WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV, JSON, and XML. Single-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
+WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and managing posts and custom post types via CSV, JSON, and XML. Multi-file PHP architecture with a jQuery admin UI. Hosted on GitHub at `ahmed-essawy/the-simplest-importer`, targeting WordPress.org distribution.
 
-- **Version**: 1.3.0
+- **Version**: 1.4.0
 - **License**: GPL-2.0-or-later
 - **Requires**: WordPress 5.8+, PHP 7.4+
 - **Tested up to**: WordPress 6.9
@@ -39,14 +39,28 @@ the-simplest-importer/              ← Git root (NOT the plugin folder)
 ├── README.md                       ← GitHub-facing readme
 ├── SECURITY.md                     ← Responsible disclosure policy
 └── the-simplest-importer/          ← PLUGIN FOLDER (what ships to WP.org)
-    ├── the-simplest-importer.php   ← Main plugin file (~1,250 lines, all logic)
+    ├── the-simplest-importer.php   ← Main plugin file (thin loader ~97 lines)
     ├── readme.txt                  ← WordPress.org readme (Stable tag must match Version)
     ├── uninstall.php               ← Cleans up transients on uninstall
     ├── index.php                   ← "Silence is golden"
+    ├── includes/
+    │   ├── index.php               ← "Silence is golden"
+    │   ├── plugin-info.php         ← Plugin row meta + thickbox info (2 functions)
+    │   ├── admin-page.php          ← Asset enqueueing + wizard HTML (2 functions)
+    │   ├── ajax-core.php           ← Post types, fields, file parsing (12 functions)
+    │   ├── ajax-export.php         ← Export + XLSX generation (4 functions)
+    │   ├── ajax-import.php         ← Import batch + helpers (9 functions)
+    │   ├── history.php             ← History, profiles, validation, rollback (9 functions)
+    │   ├── scheduled.php           ← Scheduled imports/exports via WP-Cron (10 functions)
+    │   └── meta-box.php            ← Single post export + dashboard widget (5 functions)
     ├── assets/
-    │   ├── app.js                  ← jQuery admin UI (~900 lines, IIFE)
-    │   ├── style.css               ← Admin styles (~800 lines, responsive)
-    │   └── index.php               ← "Silence is golden"
+    │   ├── app.js                  ← jQuery admin UI (~1,825 lines, IIFE)
+    │   ├── style.css               ← Core admin styles (~991 lines)
+    │   ├── index.php               ← "Silence is golden"
+    │   └── css/
+    │       ├── index.php           ← "Silence is golden"
+    │       ├── responsive.css      ← Tablet + mobile breakpoints (~516 lines)
+    │       └── features.css        ← v1.1.0+ feature styles (~545 lines)
     └── languages/
         └── index.php               ← "Silence is golden"
 ```
@@ -55,31 +69,28 @@ the-simplest-importer/              ← Git root (NOT the plugin folder)
 
 ## Architecture
 
-### Single-File PHP (`the-simplest-importer.php`)
+### PHP — Multi-File with Thin Loader
 
-All server logic is in one file — no classes, no autoloader, no separate includes. Functions are prefixed `tsi_` and organized by section comments.
+The main plugin file (`the-simplest-importer.php`, ~97 lines) defines constants, registers the admin menu, and loads 8 include files from `includes/`. All functions are prefixed `tsi_`.
 
-**Sections in order:**
-1. Plugin header + constants (`TSI_VERSION`, `TSI_PLUGIN_DIR`, `TSI_PLUGIN_URL`)
-2. Admin menu registration (`tsi_register_admin_page`) — Tools submenu
-3. WordPress Importer registration (`tsi_register_wp_importer`) — appears on Tools → Import
-4. Asset enqueueing (`tsi_enqueue_admin_assets`) — only loads on plugin page
-5. Admin page markup (`tsi_render_admin_page`) — 6-step wizard HTML
-6. AJAX handlers:
-   - `tsi_get_post_types` — returns post types with counts + max ID
-   - `tsi_get_fields` — returns importable fields for a post type
-   - `tsi_parse_csv` — parses uploaded CSV file
-   - `tsi_parse_csv_url` — fetches and parses CSV from URL
-   - `tsi_export` — exports posts as base64 CSV (modes: all, rows, range, dates)
-   - `tsi_template` — generates blank CSV template
-   - `tsi_import_batch` — processes N rows per call, client loops until done
-7. Helper functions:
-   - `tsi_get_post_type_fields()` — builds field list (core + taxonomies + meta)
-   - `tsi_read_csv_file()` — reads CSV, stores in transient, returns preview
-   - `tsi_sanitize_mapping()` — sanitizes mapping payload from client
-   - `tsi_import_single_row()` — inserts or updates one post
-   - `tsi_set_featured_image()` — downloads image URL and sets as thumbnail
-   - `tsi_filter_export_id_range()` — `posts_where` filter for ID range export
+**Main file** (`the-simplest-importer.php`):
+- Plugin header + 7 constants (`TSI_VERSION`, `TSI_PLUGIN_DIR`, `TSI_PLUGIN_URL`, `TSI_HISTORY_OPTION`, `TSI_PROFILES_OPTION`, `TSI_SCHEDULES_OPTION`, `TSI_EXPORT_SCHEDULES_OPTION`)
+- Admin menu registration (`tsi_register_admin_page`) — Tools submenu
+- WordPress Importer registration (`tsi_register_wp_importer`) — appears on Tools → Import
+- 8 `require_once` calls to includes
+
+**Include files** (all start with `ABSPATH` check):
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `plugin-info.php` | Plugin row meta + thickbox details | `tsi_plugin_row_meta()`, `tsi_plugins_api_info()` |
+| `admin-page.php` | Asset enqueueing + 6-step wizard HTML | `tsi_enqueue_admin_assets()`, `tsi_render_admin_page()` |
+| `ajax-core.php` | Post types, fields, CSV/JSON/XML parsing | `tsi_get_post_type_fields()`, `tsi_read_csv_file()`, `tsi_read_json_file()`, `tsi_read_xml_file()`, `tsi_convert_google_sheets_url()` |
+| `ajax-export.php` | Export handler + XLSX generation | `tsi_ajax_export()`, `tsi_generate_xlsx()`, `tsi_filter_export_id_range()` |
+| `ajax-import.php` | Import batch + row processing helpers | `tsi_ajax_import_batch()`, `tsi_sanitize_mapping()`, `tsi_import_single_row()`, `tsi_apply_transform()`, `tsi_check_duplicate()` |
+| `history.php` | Import history, profiles, validation, rollback | `tsi_record_import_history()`, `tsi_get_mapping_profiles()`, `tsi_ajax_validate_csv()`, `tsi_ajax_rollback()` |
+| `scheduled.php` | WP-Cron scheduled imports/exports | `tsi_run_scheduled_import()`, `tsi_run_scheduled_export()`, `tsi_send_schedule_email()`, `tsi_cleanup_old_exports()` |
+| `meta-box.php` | Single post export meta box + dashboard widget | `tsi_register_meta_box()`, `tsi_ajax_export_single_post()`, `tsi_render_dashboard_widget()` |
 
 ### JavaScript (`assets/app.js`)
 
@@ -96,9 +107,15 @@ jQuery IIFE, no build step, no transpilation. Uses `var` throughout for max comp
 - `esc()` function creates text node for XSS-safe HTML insertion
 - `downloadBase64()` converts base64 CSV to Blob for download
 
-### CSS (`assets/style.css`)
+### CSS (`assets/style.css` + `assets/css/`)
 
-No preprocessor, no build. BEM-ish naming with `tsi-` prefix. Responsive breakpoints at 782px and 480px. Uses WordPress admin palette and Dashicons.
+No preprocessor, no build. BEM-ish naming with `tsi-` prefix. Split into 3 files:
+
+- **`style.css`** (~991 lines) — CSS custom properties (light/dark themes), all base component styles, keyboard focus styles
+- **`css/responsive.css`** (~516 lines) — Tablet (`@media 782px`) and mobile (`@media 480px`) breakpoints
+- **`css/features.css`** (~545 lines) — v1.1.0+ feature styles (column mapping, export options, delimiter badges, transforms, profiles, validation, dry run, history, schedules, mapping preview, conditional filters)
+
+All three are enqueued with `tsi-admin` dependency chain. Uses WordPress admin palette and Dashicons.
 
 ## Security Model
 
@@ -223,6 +240,43 @@ Actions:
 - `tsi_set_product_gallery()` — Download comma-separated image URLs and store as WooCommerce product gallery
 - `tsi_generate_xlsx()` — Build minimal valid XLSX using ZipArchive
 - `tsi_xlsx_col_letter()` — Convert 0-based column index to Excel column letter (A, B, ..., AA, ...)
+
+## v1.4.0 Features
+
+1. **Full-width Dashboard** — Plugin page uses `max-width: 100%` instead of 860px, with right padding for comfortable reading.
+2. **Dark Mode** — Manual toggle button (dashicons-visibility/hidden) with `localStorage` persistence. All ~30 hardcoded colors refactored to CSS custom properties on `.tsi-wrap` (light) and `.tsi-wrap--dark` (dark). Includes WP admin element overrides.
+3. **Field Search in Mapping** — Search input above mapping table filters rows by field label text, shows "N / M" match counter.
+4. **Post Parent-Child Import** — `post_parent` field in core fields. Accepts numeric post ID or title string (title lookup queries same post type via `$wpdb`).
+5. **Extra Transforms with Parameters** — 9 new transforms: `find_replace`, `prepend`, `append`, `math_multiply`, `math_add`, `number_format`, `date_mdy`, `date_iso`, `url_encode`. Transform select grouped into optgroups. Parameterized transforms use `{ transform, param }` object format alongside simple strings.
+6. **Column Merge Mapping** — `__merge__` source type in column select. Template input (e.g., `{first_name} {last_name}`) replaces `{col_name}` placeholders with CSV row values. Mapping payload: `{ source: 'merge', template: '...' }`.
+7. **Dashboard Statistics Widget** — `wp_dashboard_setup` widget showing last 5 imports, next scheduled import/export, and quick link to importer. Visible only to `manage_options` users.
+8. **View Details Popup** — `plugins_api` filter (`tsi_plugins_api_info`) provides plugin description, installation, and changelog for thickbox modal. `plugin_row_meta` filter (`tsi_plugin_row_meta`) adds "View details" link.
+9. **Author URI** — Changed to `https://minicad.io/`.
+
+### New Helper Functions (v1.4.0)
+- `tsi_plugin_row_meta()` — Add "View details" thickbox link on Plugins page
+- `tsi_plugins_api_info()` — Provide plugin details for the thickbox popup (description, installation, changelog)
+- `tsi_register_dashboard_widget()` — Register the dashboard statistics widget
+- `tsi_render_dashboard_widget()` — Render dashboard widget content (last 5 imports, next scheduled events)
+
+### Updated Functions (v1.4.0)
+- `tsi_apply_transform()` — Now accepts `string|array` (simple name or `{ transform, param }` object). Added 9 new transforms.
+- `tsi_sanitize_mapping()` — Now handles `source: 'merge'` with `template` field sanitization.
+- `tsi_import_single_row()` — Added `$headers` parameter (9th). Handles `post_parent` (ID or title lookup) and `merge` source type (template replacement).
+- `tsi_get_post_type_fields()` — Added `post_parent` to core fields.
+
+### CSS Architecture (v1.4.0)
+- ~30 CSS custom properties defined on `.tsi-wrap` (light theme defaults)
+- `.tsi-wrap--dark` overrides all variables for dark theme
+- Zero hardcoded colors remain in rule declarations — all use `var(--tsi-*)`
+- New classes: `.tsi-dark-toggle`, `.tsi-field-search`, `.tsi-field-search-input`, `.tsi-field-search-count`, `.tsi-transform-param`, `.tsi-merge-template`
+
+### JS Architecture (v1.4.0)
+- Dark mode IIFE: reads `localStorage('tsi_dark_mode')`, toggles `.tsi-wrap--dark`, swaps icon
+- `buildMappingRow()`: optgroup-based transform select, param input, merge option + template input
+- `bindMappingEvents()`: `paramTransforms` map for placeholder text, show/hide param and merge inputs
+- `buildMappingPayload()`: returns `{ source: 'merge', template }` for merge selections
+- `buildTransformPayload()`: returns `{ transform, param }` for parameterized transforms
 
 ## Coding Standards
 
