@@ -1,8 +1,8 @@
 === The Simplest Importer ===
 Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
-Requires at least: 5.8
-Tested up to: 6.9
+Requires at least: 6.3
+Tested up to: 7.0
 Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later

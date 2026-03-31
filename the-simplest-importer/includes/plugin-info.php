@@ -61,9 +61,10 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 	$info->version        = TSI_VERSION;
 	$info->author         = '<a href="https://minicad.io/">Ahmed Essawy</a>';
 	$info->author_profile = 'https://minicad.io/';
-	$info->requires       = '5.8';
-	$info->tested         = '6.9';
+	$info->requires       = '6.3';
+	$info->tested         = '7.0';
 	$info->requires_php   = '7.4';
+	$info->donate_link    = 'https://www.paypal.com/paypalme/ahmessawy/10USD';
 	$info->homepage       = 'https://github.com/ahmed-essawy/the-simplest-importer';
 
 	$info->sections = array(
@@ -81,10 +82,17 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 			. '<li>' . esc_html__( 'Column merge, post parent-child, and mapping profiles', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'Dark mode toggle and field search in mapping table', 'the-simplest-importer' ) . '</li>'
 			. '</ul>',
-		'installation' => '<ol>'
-			. '<li>' . esc_html__( 'Upload the plugin folder to /wp-content/plugins/', 'the-simplest-importer' ) . '</li>'
-			. '<li>' . esc_html__( 'Activate from the Plugins page', 'the-simplest-importer' ) . '</li>'
-			. '<li>' . esc_html__( 'Navigate to Tools → Simplest Importer', 'the-simplest-importer' ) . '</li>'
+		'installation' => '<h4>' . esc_html__( 'Installation from within WordPress', 'the-simplest-importer' ) . '</h4>'
+			. '<ol>'
+			. '<li>' . esc_html__( 'Visit Plugins > Add New.', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Search for The Simplest Importer.', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Install and activate the The Simplest Importer plugin.', 'the-simplest-importer' ) . '</li>'
+			. '</ol>'
+			. '<h4>' . esc_html__( 'Manual installation', 'the-simplest-importer' ) . '</h4>'
+			. '<ol>'
+			. '<li>' . esc_html__( 'Upload the entire the-simplest-importer folder to the /wp-content/plugins/ directory.', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Visit Plugins.', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Activate the The Simplest Importer plugin.', 'the-simplest-importer' ) . '</li>'
 			. '</ol>',
 		'changelog'    => '<h4>v1.4.0</h4>'
 			. '<ul>'
@@ -95,19 +103,56 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 			. '<li>' . esc_html__( 'Extra transforms: find/replace, prepend, append, math, dates, URL encode', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'Column merge mapping', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'Dashboard statistics widget', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'View Details popup on Plugins page', 'the-simplest-importer' ) . '</li>'
 			. '</ul>'
 			. '<h4>v1.3.0</h4>'
 			. '<ul>'
 			. '<li>' . esc_html__( 'XML and JSON import support', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'Excel XLSX export', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'WooCommerce product gallery image import', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Hierarchical taxonomy import', 'the-simplest-importer' ) . '</li>'
 			. '<li>' . esc_html__( 'Error row retry', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Real-time mapping preview', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Import progress ETA', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Accessibility improvements', 'the-simplest-importer' ) . '</li>'
+			. '</ul>'
+			. '<h4>v1.2.0</h4>'
+			. '<ul>'
+			. '<li>' . esc_html__( 'ACF support with update_field()', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'SEO meta support for Yoast SEO and Rank Math', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Google Sheets import', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Conditional row filtering', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Scheduled exports with email attachment', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Single post export meta box', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Email notifications for scheduled imports', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( '8 new developer hooks', 'the-simplest-importer' ) . '</li>'
+			. '</ul>'
+			. '<h4>v1.1.0</h4>'
+			. '<ul>'
+			. '<li>' . esc_html__( 'Scheduled imports via WP-Cron', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Import history and rollback', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Duplicate detection', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Field transforms', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Mapping profiles', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'CSV validation and dry run mode', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Multi-file upload', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Delimiter auto-detection', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Selective column export and status filter', 'the-simplest-importer' ) . '</li>'
+			. '</ul>'
+			. '<h4>v1.0.0</h4>'
+			. '<ul>'
+			. '<li>' . esc_html__( 'Initial release', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'CSV import with visual column mapping', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Batch import with progress bar', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'CSV export with multiple modes', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Drag-and-drop upload and URL fetch', 'the-simplest-importer' ) . '</li>'
+			. '<li>' . esc_html__( 'Featured image and taxonomy support', 'the-simplest-importer' ) . '</li>'
 			. '</ul>',
 	);
 
 	$info->banners = array(
-		'low'  => '',
-		'high' => '',
+		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/main/assets/banner-1536x1024.png',
+		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/main/assets/banner-1536x1024.png',
 	);
 
 	return $info;
