@@ -177,8 +177,8 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 	);
 
 	$info->banners = array(
-		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1536x1024.png',
-		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1536x1024.png',
+		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-772x250.png',
+		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1544x500.png',
 	);
 
 	return $info;
