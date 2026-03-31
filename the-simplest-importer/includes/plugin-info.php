@@ -34,6 +34,12 @@ function tsi_plugin_row_meta( $links, $file ) {
 		esc_html__( 'View details', 'the-simplest-importer' )
 	);
 
+	$links[] = sprintf(
+		'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+		esc_url( 'https://www.paypal.com/paypalme/ahmessawy/10USD' ),
+		esc_html__( 'Donate', 'the-simplest-importer' )
+	);
+
 	return $links;
 }
 
@@ -151,8 +157,8 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 	);
 
 	$info->banners = array(
-		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/main/assets/banner-1536x1024.png',
-		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/main/assets/banner-1536x1024.png',
+		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1536x1024.png',
+		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1536x1024.png',
 	);
 
 	return $info;
