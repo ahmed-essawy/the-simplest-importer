@@ -7,7 +7,7 @@ WordPress plugin (slug: `the-simplest-importer`) for importing, exporting, and m
 - **Version**: 1.4.0
 - **License**: GPL-2.0-or-later
 - **Requires**: WordPress 5.8+, PHP 7.4+
-- **Tested up to**: WordPress 6.9.4
+- **Tested up to**: WordPress 6.9
 - **Author**: Ahmed Essawy (`ahm.elessawy` on WP.org)
 
 ## Repository Structure

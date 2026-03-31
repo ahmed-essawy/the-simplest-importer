@@ -62,7 +62,7 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 	$info->author         = '<a href="https://minicad.io/">Ahmed Essawy</a>';
 	$info->author_profile = 'https://minicad.io/';
 	$info->requires       = '5.8';
-	$info->tested         = '6.9.4';
+	$info->tested         = '6.9';
 	$info->requires_php   = '7.4';
 	$info->homepage       = 'https://github.com/ahmed-essawy/the-simplest-importer';
 
