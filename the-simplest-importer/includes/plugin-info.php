@@ -13,6 +13,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin Row Meta — "View details" link on Plugins page
  * ------------------------------------------------------------------ */
 
+add_filter( 'plugin_action_links_the-simplest-importer/the-simplest-importer.php', 'tsi_plugin_action_links' );
+
+/**
+ * Add a "Use Me" link to the plugin action links on the Plugins page.
+ *
+ * @param array $links Existing action links.
+ * @return array Modified links.
+ */
+function tsi_plugin_action_links( $links ) {
+	$use_me_link = sprintf(
+		'<a href="%s">%s</a>',
+		esc_url( admin_url( 'tools.php?page=the-simplest-importer' ) ),
+		esc_html__( 'Use Me', 'the-simplest-importer' )
+	);
+
+	array_unshift( $links, $use_me_link );
+
+	return $links;
+}
+
 add_filter( 'plugin_row_meta', 'tsi_plugin_row_meta', 10, 2 );
 
 /**
