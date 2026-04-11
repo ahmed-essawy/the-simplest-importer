@@ -30,6 +30,9 @@
 	var lastTransforms   = {};
 	var lastFilters      = [];
 	var firstPreviewRow  = [];
+	var currentSourceName = '';
+	var pendingImportMode = 'insert';
+	var queueContext      = null;
 
 	/* ================================================================
 	 * Dark Mode Toggle
@@ -414,6 +417,10 @@
 				uploadFile(fileQueue.shift());
 				return;
 			}
+			if (fileQueue.length === 1) {
+				uploadFile(fileQueue.shift());
+				return;
+			}
 		}
 		uploadFile(files[0]);
 	}).on('click', function (e) {
@@ -459,6 +466,9 @@
 			success: function (res) {
 				hideOverlay();
 				if (!res.success) {
+					queueContext = null;
+					fileQueue = [];
+					updateQueueNotice();
 					window.alert(res.data || 'Error parsing file.');
 					return;
 				}
@@ -466,6 +476,9 @@
 			},
 			error: function () {
 				hideOverlay();
+				queueContext = null;
+				fileQueue = [];
+				updateQueueNotice();
 				window.alert('Upload request failed.');
 			}
 		});
@@ -501,6 +514,7 @@
 	/* ---- After CSV parsed ---- */
 
 	function onCsvParsed(data, filename) {
+		currentSourceName = filename;
 		csvHeaders  = data.headers;
 		csvToken    = data.token;
 		csvRowCount = data.row_count;
@@ -555,6 +569,7 @@
 			}
 			extraFieldCount = 0;
 			buildMappingTable(res.data);
+			updateProfileDropdown(tsiImporter.profiles || {});
 			/* Show filter section if CSV headers are available */
 			if (csvHeaders.length) {
 				$('#tsi-filter-section').show();
@@ -563,6 +578,20 @@
 			$('#tsi-step-mapping').slideDown(200);
 			scrollTo('#tsi-step-mapping');
 			updateMappingPreview();
+
+			if (queueContext) {
+				var remapResult = remapQueuedMappingForHeaders(queueContext.mapping, queueContext.sourceHeaders, csvHeaders);
+				if (remapResult.missing.length) {
+					queueContext = null;
+					fileQueue = [];
+					updateQueueNotice();
+					window.alert('Queued import paused. The next file is missing expected columns: ' + remapResult.missing.join(', '));
+					return;
+				}
+
+				applyProfileMapping(remapResult.mapping);
+				startImport(queueContext.importMode, remapResult.mapping, queueContext.transforms, queueContext.isDryRun, queueContext.dupField, queueContext.dupMeta, queueContext.filters, true);
+			}
 		});
 	}
 
@@ -611,9 +640,9 @@
 		/* Field cell */
 		var fieldHtml;
 		if (isExtra) {
-			fieldHtml = '<td><input type="text" class="tsi-extra-key regular-text" placeholder="meta_key_name" value="' + esc(fieldKey) + '"></td>';
+			fieldHtml = '<td class="tsi-col-field"><input type="text" class="tsi-extra-key regular-text" placeholder="meta_key_name" value="' + esc(fieldKey) + '"></td>';
 		} else {
-			fieldHtml = '<td><strong>' + esc(fieldLabel) + '</strong><br><code>' + esc(fieldKey) + '</code></td>';
+			fieldHtml = '<td class="tsi-col-field"><strong>' + esc(fieldLabel) + '</strong><br><code>' + esc(fieldKey) + '</code></td>';
 		}
 
 		var removeBtn = isExtra ? ' <button type="button" class="button button-small tsi-remove-extra" title="Remove">&times;</button>' : '';
@@ -820,27 +849,34 @@
 	$('#tsi-btn-insert, #tsi-btn-update, #tsi-btn-insert-update').on('click', function () {
 		var btnId      = $(this).attr('id');
 		var importMode = btnId === 'tsi-btn-update' ? 'update' : (btnId === 'tsi-btn-insert-update' ? 'insert-update' : 'insert');
+		pendingImportMode = importMode;
+		startImportFromCurrentState(importMode, false);
+	});
+
+	function startImportFromCurrentState(importMode, isQueuedContinuation) {
 		var mapping    = buildMappingPayload();
 		var transforms = buildTransformPayload();
 		var isDryRun   = $('#tsi-dry-run').is(':checked');
+		var dupField   = '';
+		var dupMeta    = '';
 
-		/* Duplicate detection (#3) */
-		var dupField = '';
-		var dupMeta  = '';
 		if ($('#tsi-dup-check').is(':checked')) {
 			dupField = $('#tsi-dup-field').val();
 			dupMeta  = $('#tsi-dup-meta-key').val();
 		}
 
-		/* For insert mode, strip the ID mapping so all rows create new posts */
+		startImport(importMode, mapping, transforms, isDryRun, dupField, dupMeta, buildFilterPayload(), isQueuedContinuation);
+	}
+
+	function startImport(importMode, mapping, transforms, isDryRun, dupField, dupMeta, filters, isQueuedContinuation) {
 		if (importMode === 'insert' && mapping.hasOwnProperty('ID')) {
 			delete mapping.ID;
 		}
 
 		var hasMapping = false;
-		var k;
-		for (k in mapping) {
-			if (mapping.hasOwnProperty(k)) {
+		var key;
+		for (key in mapping) {
+			if (mapping.hasOwnProperty(key)) {
 				hasMapping = true;
 				break;
 			}
@@ -851,21 +887,46 @@
 			return;
 		}
 
-		var confirmMsg;
-		if (isDryRun) {
-			confirmMsg = 'Run a dry run (no changes will be made)?';
-		} else if (importMode === 'update') {
-			confirmMsg = 'This will update existing posts based on the ID column. Continue?';
-		} else if (importMode === 'insert-update') {
-			confirmMsg = 'This will insert rows with no ID or non-existing IDs, and update rows with existing IDs. Continue?';
-		} else {
-			confirmMsg = 'This will insert new posts. Continue?';
-		}
-		if (!window.confirm(confirmMsg)) {
-			return;
+		if (!isQueuedContinuation) {
+			var confirmMsg;
+			if (isDryRun) {
+				confirmMsg = 'Run a dry run (no changes will be made)?';
+			} else if (importMode === 'update') {
+				confirmMsg = 'This will update existing posts based on the ID column. Continue?';
+			} else if (importMode === 'insert-update') {
+				confirmMsg = 'This will insert rows with no ID or non-existing IDs, and update rows with existing IDs. Continue?';
+			} else {
+				confirmMsg = 'This will insert new posts. Continue?';
+			}
+
+			if (!window.confirm(confirmMsg)) {
+				return;
+			}
+
+			if (fileQueue.length > 0) {
+				queueContext = {
+					sourceHeaders: cloneData(csvHeaders),
+					mapping: cloneData(mapping),
+					transforms: cloneData(transforms),
+					importMode: importMode,
+					isDryRun: isDryRun,
+					dupField: dupField,
+					dupMeta: dupMeta,
+					filters: cloneData(filters),
+					totals: { inserted: 0, updated: 0, skipped: 0, errors: 0 },
+					logs: [],
+					processedCount: 0,
+					totalCount: fileQueue.length + 1
+				};
+			} else {
+				queueContext = null;
+			}
+
+			updateQueueNotice();
 		}
 
-		/* Transition to progress view */
+		resetProgress();
+		$('#tsi-step-results, #tsi-step-validation').hide();
 		$('#tsi-step-mapping').slideUp(200);
 		$('#tsi-step-progress').slideDown(200);
 		scrollTo('#tsi-step-progress');
@@ -876,21 +937,79 @@
 
 		var totals = { inserted: 0, updated: 0, skipped: 0, errors: 0 };
 		var allLogs = [];
-		var filters = buildFilterPayload();
 		lastHistoryId    = '';
 		lastAllLogs      = [];
 		failedRowIndices = [];
-		lastMapping      = mapping;
+		lastMapping      = cloneData(mapping);
 		lastImportMode   = importMode;
 		lastDryRun       = isDryRun;
 		lastDupField     = dupField;
 		lastDupMeta      = dupMeta;
-		lastTransforms   = transforms;
-		lastFilters      = filters;
-		var batchStartTime = Date.now();
+		lastTransforms   = cloneData(transforms);
+		lastFilters      = cloneData(filters);
+		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, Date.now());
+	}
 
-		processBatch(0, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, batchStartTime);
-	});
+	function getSuggestedImportMode(mapping) {
+		return mapping.hasOwnProperty('ID') ? 'insert-update' : 'insert';
+	}
+
+	function cloneData(data) {
+		return JSON.parse(JSON.stringify(data));
+	}
+
+	function findHeaderIndex(headerName, headers) {
+		var normalizedHeader = String(headerName).toLowerCase().replace(/[\s_\-]+/g, '');
+		var index = -1;
+
+		$.each(headers, function (i, candidate) {
+			var normalizedCandidate = String(candidate).toLowerCase().replace(/[\s_\-]+/g, '');
+			if (headerName === candidate || normalizedHeader === normalizedCandidate) {
+				index = i;
+				return false;
+			}
+		});
+
+		return index;
+	}
+
+	function remapQueuedMappingForHeaders(mapping, sourceHeaders, newHeaders) {
+		var remapped = cloneData(mapping);
+		var missing  = [];
+
+		$.each(remapped, function (fieldKey, info) {
+			if (!info || info.source !== 'csv') {
+				return;
+			}
+
+			var sourceHeader = sourceHeaders[info.col];
+			var newIndex = findHeaderIndex(sourceHeader, newHeaders);
+			if (newIndex === -1) {
+				missing.push(sourceHeader);
+				return;
+			}
+
+			info.col = newIndex;
+		});
+
+		return {
+			mapping: remapped,
+			missing: missing
+		};
+	}
+
+	function updateQueueNotice() {
+		if (fileQueue.length > 0) {
+			var message = '<strong>' + fileQueue.length + ' queued files remaining.</strong>';
+			if (queueContext) {
+				message += ' They will continue automatically when the next file headers match.';
+			}
+			$('#tsi-file-queue').html(message).show();
+			return;
+		}
+
+		$('#tsi-file-queue').hide().empty();
+	}
 
 	/**
 	 * Build the mapping payload from the table.
@@ -1110,24 +1229,60 @@
 			if (!d.done) {
 				processBatch(d.offset, mapping, totals, allLogs, importMode, isDryRun, dupField, dupMeta, transforms, filters, startTime, retryRows);
 			} else {
-				lastAllLogs = allLogs;
-				showResults(totals, allLogs, isDryRun);
+				handleCompletedImport(totals, allLogs, isDryRun);
 			}
 
 		}).fail(function () {
+			queueContext = null;
+			fileQueue = [];
+			updateQueueNotice();
 			$('#tsi-progress-detail').text('Network error. Import halted.');
 		});
+	}
+
+	function handleCompletedImport(totals, allLogs, isDryRun) {
+		if (queueContext) {
+			queueContext.processedCount += 1;
+			queueContext.totals.inserted += totals.inserted;
+			queueContext.totals.updated  += totals.updated;
+			queueContext.totals.skipped  += totals.skipped;
+			queueContext.totals.errors   += totals.errors;
+			queueContext.logs.push('=== ' + currentSourceName + ' ===');
+			queueContext.logs = queueContext.logs.concat(allLogs);
+			lastAllLogs = queueContext.logs.slice();
+
+			if (fileQueue.length > 0) {
+				updateQueueNotice();
+				$('#tsi-progress-fill').css('width', '100%');
+				$('#tsi-progress-pct').text('100%');
+				$('#tsi-progress-title').text('Preparing next queued file\u2026');
+				$('#tsi-progress-detail').text('Completed ' + queueContext.processedCount + ' of ' + queueContext.totalCount + ' files. Loading the next file\u2026');
+				uploadFile(fileQueue.shift(), true);
+				return;
+			}
+
+			var queueTotals = cloneData(queueContext.totals);
+			var queueLogs   = queueContext.logs.slice();
+			queueContext = null;
+			lastHistoryId = '';
+			updateQueueNotice();
+			showResults(queueTotals, queueLogs, isDryRun, false, true);
+			return;
+		}
+
+		lastAllLogs = allLogs;
+		showResults(totals, allLogs, isDryRun, !!lastHistoryId, false);
 	}
 
 	/* ================================================================
 	 * Step 6 — Results
 	 * ================================================================ */
 
-	function showResults(totals, allLogs, isDryRun) {
+	function showResults(totals, allLogs, isDryRun, allowRollback, isQueueSummary) {
 		/* Complete progress */
 		$('#tsi-progress-fill').css('width', '100%');
 		$('#tsi-progress-pct').text('100%');
-		$('#tsi-progress-title').text(isDryRun ? 'Dry Run Complete' : 'Complete');
+		$('#tsi-progress-title').text(isDryRun ? 'Dry Run Complete' : (isQueueSummary ? 'Queued Import Complete' : 'Complete'));
 		$('#tsi-progress-detail').text(isDryRun ? 'No changes were made.' : 'Import finished successfully.');
 
 		/* Summary badges */
@@ -1138,6 +1293,9 @@
 			'<span class="tsi-badge tsi-badge-errors"><span class="dashicons dashicons-warning"></span> ' + totals.errors + ' Errors</span>';
 		if (isDryRun) {
 			badgeHtml = '<span class="tsi-badge tsi-badge-dry">[DRY RUN]</span> ' + badgeHtml;
+		}
+		if (isQueueSummary) {
+			badgeHtml = '<p class="description">Queued files were processed sequentially with the same import settings.</p>' + badgeHtml;
 		}
 		$('#tsi-results-summary').html(badgeHtml);
 
@@ -1161,7 +1319,7 @@
 		$('#tsi-btn-download-log').toggle(allLogs.length > 0);
 
 		/* Show rollback button only for non-dry-run imports with a history ID */
-		$('#tsi-btn-rollback').toggle(!isDryRun && !!lastHistoryId);
+		$('#tsi-btn-rollback').toggle(!isDryRun && allowRollback);
 
 		/* Show retry button when there are failed rows */
 		$('#tsi-btn-retry-failed').toggle(!isDryRun && failedRowIndices.length > 0);
@@ -1266,6 +1424,8 @@
 			return;
 		}
 
+		pendingImportMode = getSuggestedImportMode(mapping);
+
 		showOverlay('Validating\u2026');
 		$.post(tsiImporter.ajax_url, {
 			action:    'tsi_validate_csv',
@@ -1310,8 +1470,7 @@
 	/* Proceed with Import after validation */
 	$('#tsi-btn-proceed-import').on('click', function () {
 		$('#tsi-step-validation').slideUp(200);
-		$('#tsi-step-mapping').slideDown(200);
-		scrollTo('#tsi-step-mapping');
+		startImportFromCurrentState(pendingImportMode, false);
 	});
 
 	/* Cancel from validation — hide validation and stay on mapping */
@@ -1389,7 +1548,7 @@
 	 * Mapping Profiles (#6)
 	 * ================================================================ */
 
-	$('#tsi-btn-save-profile').on('click', function () {
+	$('#tsi-save-profile').on('click', function () {
 		var name = window.prompt('Enter a name for this mapping profile:');
 		if (!name) {
 			return;
@@ -1408,7 +1567,7 @@
 				window.alert(res.data || 'Save failed.');
 				return;
 			}
-			updateProfileDropdown(res.data.profiles);
+			updateProfileDropdown(res.data.profiles, res.data.profile_id || '');
 			window.alert(res.data.message);
 		}).fail(function () {
 			hideOverlay();
@@ -1416,7 +1575,7 @@
 		});
 	});
 
-	$('#tsi-btn-delete-profile').on('click', function () {
+	$('#tsi-delete-profile').on('click', function () {
 		var id = $('#tsi-profile-select').val();
 		if (!id) {
 			window.alert('Please select a profile to delete.');
@@ -1438,6 +1597,7 @@
 
 	$('#tsi-profile-select').on('change', function () {
 		var id = $(this).val();
+		$('#tsi-delete-profile').toggle(!!id);
 		if (!id) {
 			return;
 		}
@@ -1447,7 +1607,7 @@
 		}
 	});
 
-	function updateProfileDropdown(profiles) {
+	function updateProfileDropdown(profiles, selectedId) {
 		tsiImporter.profiles = profiles;
 		var $sel = $('#tsi-profile-select').empty().append('<option value="">— select profile —</option>');
 		var pt   = $('#tsi-post-type').val();
@@ -1456,6 +1616,10 @@
 				$sel.append('<option value="' + esc(id) + '">' + esc(p.name) + '</option>');
 			}
 		});
+		if (selectedId) {
+			$sel.val(selectedId);
+		}
+		$('#tsi-delete-profile').toggle(!!$sel.val());
 	}
 
 	function applyProfileMapping(profileMapping) {
@@ -1738,6 +1902,7 @@
 			$('#tsi-step-validation').hide();
 			$('#tsi-step-history').hide();
 			$('#tsi-step-schedule').hide();
+			$('#tsi-step-export-schedule').hide();
 		}
 	}
 
@@ -1758,6 +1923,9 @@
 		csvHeaders  = [];
 		csvToken    = '';
 		csvRowCount = 0;
+		currentSourceName = '';
+		pendingImportMode = 'insert';
+		queueContext = null;
 		fileQueue   = [];
 	}
 

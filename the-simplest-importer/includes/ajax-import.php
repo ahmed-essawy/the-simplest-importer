@@ -196,7 +196,12 @@ function tsi_ajax_import_batch() {
 	$skipped     = 0;
 	$errors      = 0;
 	$post_ids    = array();
+	$history_actions = array();
 	$failed_rows = array();
+
+	if ( ! $dry_run && ! $history_id ) {
+		$history_id = wp_generate_password( 12, false );
+	}
 
 	foreach ( $rows as $i => $row ) {
 		$row_num   = $row_indices[ $i ] + 2; // +2: header is row 1, data starts at row 2.
@@ -224,11 +229,14 @@ function tsi_ajax_import_batch() {
 			}
 		}
 
-		$result  = tsi_import_single_row( $row, $row_num, $post_type, $clean_map, $dry_run, $dup_field, $dup_meta, $transforms, $headers );
+		$result  = tsi_import_single_row( $row, $row_num, $post_type, $clean_map, $dry_run, $dup_field, $dup_meta, $transforms, $headers, $import_mode );
 
 		$log[] = $result['message'];
 		if ( ! empty( $result['post_id'] ) ) {
 			$post_ids[] = $result['post_id'];
+		}
+		if ( ! empty( $result['history_action'] ) && is_array( $result['history_action'] ) ) {
+			$history_actions[] = $result['history_action'];
 		}
 		switch ( $result['status'] ) {
 			case 'inserted':
@@ -250,18 +258,33 @@ function tsi_ajax_import_batch() {
 	$next_offset = $offset + count( $rows );
 	$done        = $next_offset >= $total;
 
+	if ( ! $dry_run && ( $inserted > 0 || $updated > 0 || $skipped > 0 || $errors > 0 || ! empty( $history_actions ) ) ) {
+		tsi_record_import_history( $history_id, $post_type, $import_mode, $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, $done );
+	}
+
 	if ( $done ) {
 		/* Keep transient alive when there are failed rows for potential retry */
 		if ( empty( $failed_rows ) ) {
 			delete_transient( 'tsi_csv_data_' . $token );
 		}
 
-		/* Record import in history (skip for dry runs) */
-		if ( ! $dry_run && ( $inserted > 0 || $updated > 0 ) ) {
-			if ( ! $history_id ) {
-				$history_id = wp_generate_password( 12, false );
+		$completed_stats = array(
+			'inserted' => $inserted,
+			'updated'  => $updated,
+			'skipped'  => $skipped,
+			'errors'   => $errors,
+			'post_ids' => $post_ids,
+		);
+
+		if ( ! $dry_run && $history_id ) {
+			$history = tsi_get_import_history();
+			if ( isset( $history[ $history_id ] ) && is_array( $history[ $history_id ] ) ) {
+				$completed_stats['inserted'] = absint( $history[ $history_id ]['inserted'] );
+				$completed_stats['updated']  = absint( $history[ $history_id ]['updated'] );
+				$completed_stats['skipped']  = absint( $history[ $history_id ]['skipped'] );
+				$completed_stats['errors']   = absint( $history[ $history_id ]['errors'] );
+				$completed_stats['post_ids'] = isset( $history[ $history_id ]['post_ids'] ) && is_array( $history[ $history_id ]['post_ids'] ) ? $history[ $history_id ]['post_ids'] : array();
 			}
-			tsi_record_import_history( $history_id, $post_type, $import_mode, $inserted, $updated, $skipped, $errors, $post_ids );
 		}
 
 		/**
@@ -271,11 +294,11 @@ function tsi_ajax_import_batch() {
 		 * @param array  $stats     { inserted, updated, skipped, errors, post_ids, dry_run, history_id }
 		 */
 		do_action( 'tsi_import_completed', $post_type, array(
-			'inserted'   => $inserted,
-			'updated'    => $updated,
-			'skipped'    => $skipped,
-			'errors'     => $errors,
-			'post_ids'   => $post_ids,
+			'inserted'   => $completed_stats['inserted'],
+			'updated'    => $completed_stats['updated'],
+			'skipped'    => $completed_stats['skipped'],
+			'errors'     => $completed_stats['errors'],
+			'post_ids'   => $completed_stats['post_ids'],
 			'dry_run'    => $dry_run,
 			'history_id' => $history_id,
 		) );
@@ -354,11 +377,12 @@ function tsi_sanitize_mapping( $mapping, $col_max ) {
  * @param bool   $dry_run    If true, skip actual insert/update.
  * @param string $dup_field  Field to check for duplicates (post_title, post_name, meta_key).
  * @param string $dup_meta   Meta key name when dup_field is 'meta_key'.
- * @param array  $transforms Transforms to apply per field.
- * @param array  $headers    CSV column headers for merge template replacement.
- * @return array { status: string, message: string, post_id: int }
+ * @param array  $transforms  Transforms to apply per field.
+ * @param array  $headers     CSV column headers for merge template replacement.
+ * @param string $import_mode Import mode (insert, update, insert-update).
+ * @return array { status: string, message: string, post_id: int, history_action?: array<string, mixed> }
  */
-function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run = false, $dup_field = '', $dup_meta = '', $transforms = array(), $headers = array() ) {
+function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run = false, $dup_field = '', $dup_meta = '', $transforms = array(), $headers = array(), $import_mode = 'insert-update' ) {
 	$post_data    = array( 'post_type' => $post_type );
 	$meta_data    = array();
 	$tax_data     = array();
@@ -473,8 +497,21 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	$thumb_url    = $import_row_data['thumb_url'];
 	$gallery_urls = $import_row_data['gallery_urls'];
 
+	if ( 'insert' === $import_mode && ! empty( $post_data['ID'] ) ) {
+		unset( $post_data['ID'] );
+	}
+
 	/* Determine insert vs. update */
 	$is_update = false;
+	if ( 'update' === $import_mode && empty( $post_data['ID'] ) ) {
+		return array(
+			'status'  => 'skipped',
+			'post_id' => 0,
+			/* translators: %d: row number */
+			'message' => sprintf( __( 'Row %d: Skipped — update mode requires a valid ID column.', 'the-simplest-importer' ), $row_num ),
+		);
+	}
+
 	if ( ! empty( $post_data['ID'] ) ) {
 		$existing = get_post( $post_data['ID'] );
 		if ( $existing && $existing->post_type === $post_type ) {
@@ -485,6 +522,13 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 				'post_id' => 0,
 				/* translators: 1: row number, 2: post ID */
 				'message' => sprintf( __( 'Row %1$d: Skipped — ID %2$d belongs to a different post type.', 'the-simplest-importer' ), $row_num, $post_data['ID'] ),
+			);
+		} elseif ( 'update' === $import_mode ) {
+			return array(
+				'status'  => 'skipped',
+				'post_id' => 0,
+				/* translators: 1: row number, 2: post ID */
+				'message' => sprintf( __( 'Row %1$d: Skipped — post ID %2$d was not found.', 'the-simplest-importer' ), $row_num, $post_data['ID'] ),
 			);
 		} else {
 			unset( $post_data['ID'] ); // ID not found; insert as new.
@@ -506,6 +550,18 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 
 	if ( ! $is_update && empty( $post_data['post_status'] ) ) {
 		$post_data['post_status'] = 'draft';
+	}
+
+	$history_action = array();
+	if ( ! $dry_run && $is_update ) {
+		$snapshot = tsi_capture_post_snapshot( absint( $post_data['ID'] ) );
+		if ( ! empty( $snapshot ) ) {
+			$history_action = array(
+				'type'     => 'updated',
+				'post_id'  => absint( $post_data['ID'] ),
+				'snapshot' => $snapshot,
+			);
+		}
 	}
 
 	/* Dry run — report what would happen without writing */
@@ -609,16 +665,21 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 
 	if ( $is_update ) {
 		return array(
-			'status'  => 'updated',
-			'post_id' => $post_id,
+			'status'         => 'updated',
+			'post_id'        => $post_id,
+			'history_action' => $history_action,
 			/* translators: 1: row number, 2: post ID */
 			'message' => sprintf( __( 'Row %1$d: Updated post #%2$d', 'the-simplest-importer' ), $row_num, $post_id ),
 		);
 	}
 
 	return array(
-		'status'  => 'inserted',
-		'post_id' => $post_id,
+		'status'         => 'inserted',
+		'post_id'        => $post_id,
+		'history_action' => array(
+			'type'    => 'inserted',
+			'post_id' => $post_id,
+		),
 		/* translators: 1: row number, 2: post ID */
 		'message' => sprintf( __( 'Row %1$d: Inserted new post #%2$d', 'the-simplest-importer' ), $row_num, $post_id ),
 	);

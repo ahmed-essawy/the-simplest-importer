@@ -236,11 +236,11 @@ function tsi_render_admin_page() {
 						<div class="tsi-export-section">
 							<h4><?php esc_html_e( 'Filter by Status', 'the-simplest-importer' ); ?></h4>
 							<div class="tsi-status-checks">
-								<label><input type="checkbox" name="tsi-export-status" value="publish" checked> <?php esc_html_e( 'Published', 'the-simplest-importer' ); ?></label>
-								<label><input type="checkbox" name="tsi-export-status" value="draft" checked> <?php esc_html_e( 'Draft', 'the-simplest-importer' ); ?></label>
-								<label><input type="checkbox" name="tsi-export-status" value="pending" checked> <?php esc_html_e( 'Pending', 'the-simplest-importer' ); ?></label>
-								<label><input type="checkbox" name="tsi-export-status" value="private" checked> <?php esc_html_e( 'Private', 'the-simplest-importer' ); ?></label>
-								<label><input type="checkbox" name="tsi-export-status" value="future"> <?php esc_html_e( 'Scheduled', 'the-simplest-importer' ); ?></label>
+								<label><input type="checkbox" class="tsi-export-status" name="tsi-export-status" value="publish" checked> <?php esc_html_e( 'Published', 'the-simplest-importer' ); ?></label>
+								<label><input type="checkbox" class="tsi-export-status" name="tsi-export-status" value="draft" checked> <?php esc_html_e( 'Draft', 'the-simplest-importer' ); ?></label>
+								<label><input type="checkbox" class="tsi-export-status" name="tsi-export-status" value="pending" checked> <?php esc_html_e( 'Pending', 'the-simplest-importer' ); ?></label>
+								<label><input type="checkbox" class="tsi-export-status" name="tsi-export-status" value="private" checked> <?php esc_html_e( 'Private', 'the-simplest-importer' ); ?></label>
+								<label><input type="checkbox" class="tsi-export-status" name="tsi-export-status" value="future"> <?php esc_html_e( 'Scheduled', 'the-simplest-importer' ); ?></label>
 							</div>
 						</div>
 						<div class="tsi-export-section">

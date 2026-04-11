@@ -3,7 +3,7 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 6.3
 Tested up to: 7.0
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -33,13 +33,13 @@ Import, export, and manage WordPress posts and custom post types via CSV, JSON, 
 * **Developer Friendly** — Action hooks and filters to extend import behaviour.
 * **Admin Only** — Requires `manage_options` capability. No front-end output, no tracking, no external calls.
 * **Scheduled Imports** — Set up recurring WP-Cron imports from a URL (hourly, twice daily, daily, weekly).
-* **Import History & Rollback** — View past imports and move imported posts to trash with one click.
+* **Import History & Rollback** — View past imports, trash inserted posts, and restore updated posts from saved rollback snapshots.
 * **Duplicate Detection** — Skip rows when a matching post title, slug, or meta key already exists.
 * **Field Transforms** — Apply per-field transforms during import: uppercase, lowercase, title case, trim, strip tags, slug, and date formats.
 * **Mapping Profiles** — Save and reuse column mapping configurations.
 * **CSV Validation** — Check for issues before importing: invalid dates, statuses, author IDs, and thumbnail URLs.
 * **Dry Run Mode** — Preview what an import would do without touching the database.
-* **Multi-file Upload** — Drag-and-drop multiple CSV files to queue them for sequential import.
+* **Multi-file Upload** — Drag-and-drop multiple CSV files to queue them for sequential import when they share the same header structure.
 * **Delimiter Auto-detection** — Handles comma, semicolon, tab, and pipe delimiters automatically.
 * **Selective Column Export** — Choose which fields to include in your export.
 * **Status Filter Export** — Filter exported posts by publish status.
@@ -84,7 +84,7 @@ Yes. Include an `ID` column in your CSV with the WordPress post ID. Matching pos
 
 = What happens if the ID doesn't exist? =
 
-A new post is created with the next available ID. The non-existent ID is simply ignored.
+In **Insert/Update** mode, the row is inserted as a new post. In **Update** mode, the row is skipped and logged because there is no existing post to update.
 
 = Can I import custom fields (post meta)? =
 
@@ -116,6 +116,18 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 6. Step 6 — Color-coded result summary with detailed log.
 
 == Changelog ==
+
+= 1.4.1 =
+* Fixed: Import history now accumulates every batch instead of saving only the final batch.
+* Fixed: Rollback now trashes inserted posts and restores updated posts to their previous state.
+* Fixed: Update-only imports now skip rows without a valid existing post ID instead of inserting new posts unexpectedly.
+* Fixed: Validation's "Proceed with Import" button now starts the import using the current mapping.
+* Fixed: Mapping profile save/delete buttons, field search, and export status filters now use the correct admin UI selectors.
+* Fixed: Multi-file queued imports now continue automatically across matching files.
+* Fixed: Scheduled import and export forms now validate URLs, post types, and notification emails more strictly.
+* Fixed: Dashboard recent-import widget now shows the latest five imports.
+* Fixed: Plugin info modal no longer references remote banner assets.
+* Fixed: Uninstall cleanup now unschedules cron events before deleting their stored schedules, and removes rollback snapshot data.
 
 = 1.4.0 =
 * Added: Full-width dashboard layout — plugin page now uses the full available width.
@@ -175,10 +187,6 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 * Visual column mapping with smart auto-matching.
 * Batch import with real-time progress bar.
 * Drag & drop CSV upload and remote URL fetch.
-* Da3.0 =
-New: XML & JSON import, Excel XLSX export, product gallery import, hierarchical taxonomy support, error row retry, mapping preview, progress ETA, and accessibility improvements.
-
-= 1.ta preview before import.
 * Custom static values and on-the-fly custom fields.
 * Insert or update posts by ID.
 * Detailed per-row import log.
@@ -188,6 +196,9 @@ New: XML & JSON import, Excel XLSX export, product gallery import, hierarchical 
 * Developer hooks: `tsi_post_types`, `tsi_post_type_fields`, `tsi_import_batch_size`, `tsi_after_import_row`.
 
 == Upgrade Notice ==
+
+= 1.4.1 =
+Improves rollback safety, fixes queued imports and validation flow, and tightens schedule and uninstall handling.
 
 = 1.2.0 =
 New: ACF & SEO meta support, Google Sheets import, conditional row filtering, scheduled exports, email notifications, and single post export meta box.

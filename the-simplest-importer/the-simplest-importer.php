@@ -3,8 +3,9 @@
  * Plugin Name:       The Simplest Importer
  * Plugin URI:        https://github.com/ahmed-essawy/the-simplest-importer
  * Description:       Import, export, and manage posts and custom post types via CSV, JSON, and XML with visual column mapping and batch processing.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 6.3
+ * Tested up to:      7.0
  * Requires PHP:      7.4
  * Author:            Ahmed Essawy
  * Author URI:        https://minicad.io/
@@ -20,7 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TSI_VERSION', '1.4.0' );
+define( 'TSI_VERSION', '1.4.1' );
+define( 'TSI_PLUGIN_FILE', __FILE__ );
+define( 'TSI_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'TSI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TSI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'TSI_HISTORY_OPTION', 'tsi_import_history' );

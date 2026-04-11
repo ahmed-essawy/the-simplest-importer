@@ -421,7 +421,7 @@ function tsi_read_csv_file( $filepath ) {
 	$delimiter = $csv_data['delimiter'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
 
 	$delimiter_labels = array(
 		','  => __( 'comma', 'the-simplest-importer' ),
@@ -437,6 +437,21 @@ function tsi_read_csv_file( $filepath ) {
 		'token'     => $token,
 		'delimiter' => isset( $delimiter_labels[ $delimiter ] ) ? $delimiter_labels[ $delimiter ] : $delimiter,
 	);
+}
+
+/**
+ * Get the transient lifetime used for parsed import files.
+ *
+ * @return int
+ */
+function tsi_get_import_data_ttl() {
+	$ttl = (int) apply_filters( 'tsi_import_data_ttl', DAY_IN_SECONDS );
+
+	if ( $ttl < HOUR_IN_SECONDS ) {
+		return HOUR_IN_SECONDS;
+	}
+
+	return $ttl;
 }
 
 /**
@@ -523,7 +538,7 @@ function tsi_read_json_file( $filepath ) {
 	$rows    = $csv_data['rows'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
 
 	return array(
 		'headers'   => $headers,
@@ -678,7 +693,7 @@ function tsi_read_xml_file( $filepath ) {
 	$rows    = $csv_data['rows'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, HOUR_IN_SECONDS );
+	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
 
 	return array(
 		'headers'   => $headers,

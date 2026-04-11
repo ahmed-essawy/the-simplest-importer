@@ -47,7 +47,7 @@ function tsi_render_meta_box( $post ) {
 			var nonce  = document.getElementById('tsi_meta_box_nonce').value;
 			var data   = new FormData();
 			data.append('action', 'tsi_export_single_post');
-			data.append('nonce', nonce);
+				data.append('tsi_meta_box_nonce', nonce);
 			data.append('post_id', postId);
 			fetch(ajaxurl, { method: 'POST', body: data, credentials: 'same-origin' })
 				.then(function (r) { return r.json(); })
@@ -68,7 +68,10 @@ function tsi_render_meta_box( $post ) {
 					a.click();
 					document.body.removeChild(a);
 					URL.revokeObjectURL(url);
-				});
+					})
+					.catch(function () {
+						window.alert('Export request failed.');
+					});
 		});
 	})();
 	</script>
@@ -79,7 +82,7 @@ function tsi_render_meta_box( $post ) {
  * AJAX handler — export a single post as CSV.
  */
 function tsi_ajax_export_single_post() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+	check_ajax_referer( 'tsi_nonce', 'tsi_meta_box_nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
@@ -183,7 +186,7 @@ function tsi_render_dashboard_widget() {
 	$exports   = get_option( TSI_EXPORT_SCHEDULES_OPTION, array() );
 
 	/* Recent imports — last 5 */
-	$recent = array_slice( $history, 0, 5 );
+	$recent = array_slice( array_reverse( $history ), 0, 5 );
 
 	if ( empty( $recent ) ) {
 		echo '<p>' . esc_html__( 'No imports yet.', 'the-simplest-importer' ) . '</p>';

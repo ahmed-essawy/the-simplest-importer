@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin Row Meta — "View details" link on Plugins page
  * ------------------------------------------------------------------ */
 
-add_filter( 'plugin_action_links_the-simplest-importer/the-simplest-importer.php', 'tsi_plugin_action_links' );
+add_filter( 'plugin_action_links_' . TSI_PLUGIN_BASENAME, 'tsi_plugin_action_links' );
 
 /**
  * Add a "Use Me" link to the plugin action links on the Plugins page.
@@ -43,7 +43,7 @@ add_filter( 'plugin_row_meta', 'tsi_plugin_row_meta', 10, 2 );
  * @return array Modified links.
  */
 function tsi_plugin_row_meta( $links, $file ) {
-	if ( plugin_basename( TSI_PLUGIN_DIR . 'the-simplest-importer.php' ) !== $file ) {
+	if ( TSI_PLUGIN_BASENAME !== $file ) {
 		return $links;
 	}
 
@@ -176,10 +176,7 @@ function tsi_plugins_api_info( $result, $action, $args ) {
 			. '</ul>',
 	);
 
-	$info->banners = array(
-		'low'  => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-772x250.png',
-		'high' => 'https://raw.githubusercontent.com/ahmed-essawy/the-simplest-importer/master/assets/banner-1544x500.png',
-	);
+	$info->last_updated = gmdate( 'Y-m-d' );
 
 	return $info;
 }

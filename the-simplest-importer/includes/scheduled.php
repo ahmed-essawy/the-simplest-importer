@@ -33,6 +33,18 @@ function tsi_ajax_add_schedule() {
 		wp_send_json_error( esc_html__( 'Name, URL, and post type are required.', 'the-simplest-importer' ) );
 	}
 
+	if ( ! wp_http_validate_url( $url ) ) {
+		wp_send_json_error( esc_html__( 'Please enter a valid URL.', 'the-simplest-importer' ) );
+	}
+
+	if ( ! post_type_exists( $post_type ) ) {
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+	}
+
+	if ( $email && ! is_email( $email ) ) {
+		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'the-simplest-importer' ) );
+	}
+
 	$allowed_freq = array( 'hourly', 'twicedaily', 'daily', 'weekly' );
 	if ( ! in_array( $frequency, $allowed_freq, true ) ) {
 		$frequency = 'daily';
@@ -239,20 +251,27 @@ function tsi_run_scheduled_import( $schedule_id ) {
 
 	$clean_map = tsi_sanitize_mapping( $mapping, count( $headers ) );
 
-	$inserted = 0;
-	$updated  = 0;
-	$errors   = 0;
-	$post_ids = array();
+	$inserted       = 0;
+	$updated        = 0;
+	$skipped        = 0;
+	$errors         = 0;
+	$post_ids       = array();
+	$history_actions = array();
 
 	foreach ( $rows as $i => $row ) {
-		$result = tsi_import_single_row( $row, $i + 2, $post_type, $clean_map, false, '', '', array(), $headers );
+		$result = tsi_import_single_row( $row, $i + 2, $post_type, $clean_map, false, '', '', array(), $headers, 'insert-update' );
 		if ( ! empty( $result['post_id'] ) ) {
 			$post_ids[] = $result['post_id'];
+		}
+		if ( ! empty( $result['history_action'] ) && is_array( $result['history_action'] ) ) {
+			$history_actions[] = $result['history_action'];
 		}
 		if ( 'inserted' === $result['status'] ) {
 			$inserted++;
 		} elseif ( 'updated' === $result['status'] ) {
 			$updated++;
+		} elseif ( 'skipped' === $result['status'] ) {
+			$skipped++;
 		} else {
 			$errors++;
 		}
@@ -260,7 +279,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 
 	/* Record in history */
 	$history_id = 'sched-' . $schedule_id . '-' . time();
-	tsi_record_import_history( $history_id, $post_type, 'scheduled', $inserted, $updated, 0, $errors, $post_ids );
+	tsi_record_import_history( $history_id, $post_type, 'scheduled', $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, true );
 
 	/* Clean up CSV transient */
 	delete_transient( 'tsi_csv_data_' . $csv_token );
@@ -345,6 +364,14 @@ function tsi_ajax_add_export_schedule() {
 
 	if ( ! $name || ! $post_type ) {
 		wp_send_json_error( esc_html__( 'Name and post type are required.', 'the-simplest-importer' ) );
+	}
+
+	if ( ! post_type_exists( $post_type ) ) {
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+	}
+
+	if ( $email && ! is_email( $email ) ) {
+		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'the-simplest-importer' ) );
 	}
 
 	$allowed_freq = array( 'hourly', 'twicedaily', 'daily', 'weekly' );
