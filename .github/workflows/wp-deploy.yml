@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  PLUGIN_SLUG: the-simplest-importer
+  PLUGIN_SLUG: smartly-import-export
 
 jobs:
   deploy:
@@ -42,7 +42,7 @@ jobs:
         run: |
           wp i18n make-pot "$PLUGIN_SLUG" "$PLUGIN_SLUG/languages/$PLUGIN_SLUG.pot" \
             --slug="$PLUGIN_SLUG" \
-            --headers='{"Report-Msgid-Bugs-To":"https://github.com/ahmed-essawy/the-simplest-importer/issues"}'
+            --headers='{"Report-Msgid-Bugs-To":"https://github.com/ahmed-essawy/smartly-import-export/issues"}'
 
       - name: Deploy to WordPress.org
         uses: 10up/action-wordpress-plugin-deploy@stable

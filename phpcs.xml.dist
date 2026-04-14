@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<ruleset name="The Simplest Importer">
-	<description>PHPCS ruleset for The Simplest Importer plugin.</description>
+<ruleset name="Smartly Import Export">
+	<description>PHPCS ruleset for Smartly Import Export plugin.</description>
 
 	<!-- Scan plugin directory -->
-	<file>./the-simplest-importer</file>
+	<file>./smartly-import-export</file>
 
 	<!-- Exclude non-PHP assets -->
 	<exclude-pattern>*/assets/*</exclude-pattern>
@@ -24,7 +24,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="the-simplest-importer"/>
+				<element value="smartly-import-export"/>
 			</property>
 		</properties>
 	</rule>
@@ -33,8 +33,8 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="tsi"/>
-				<element value="the_simplest_importer"/>
+				<element value="smie"/>
+				<element value="smartly_import_export"/>
 			</property>
 		</properties>
 	</rule>

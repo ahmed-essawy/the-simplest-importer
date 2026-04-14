@@ -1,9 +1,9 @@
-# The Simplest Importer
+# Smartly Import Export
 
 **Import, export, and manage WordPress posts and custom post types via CSV — with visual column mapping and batch processing.**
 
-[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/the-simplest-importer)](https://wordpress.org/plugins/the-simplest-importer/)
-[![WordPress Tested Up To](https://img.shields.io/wordpress/plugin/tested/the-simplest-importer)](https://wordpress.org/plugins/the-simplest-importer/)
+[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/smartly-import-export)](https://wordpress.org/plugins/smartly-import-export/)
+[![WordPress Tested Up To](https://img.shields.io/wordpress/plugin/tested/smartly-import-export)](https://wordpress.org/plugins/smartly-import-export/)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPLv2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![PHP Compatibility](https://img.shields.io/badge/PHP-7.4%20%7C%208.0%20%7C%208.1%20%7C%208.2%20%7C%208.3-8892BF.svg)](https://www.php.net/)
 
@@ -25,7 +25,7 @@
 - **Taxonomy Support** — Import comma-separated terms for categories, tags, and custom taxonomies.
 - **Featured Image** — Set featured images from URLs during import.
 - **Developer Hooks** — Filters and actions to extend import behavior.
-- **Admin Only** — Requires `manage_options`. No front-end output, no tracking, no external calls.
+- **Admin Only** — Requires `manage_options`. No front-end output or tracking. Remote requests only occur for URLs or notifications you explicitly configure, such as importing a file from a URL, downloading external media during import, or sending scheduled import/export emails.
 
 ## Requirements
 
@@ -38,14 +38,14 @@
 
 ### From WordPress Admin
 
-1. Go to **Plugins → Add New** and search for **The Simplest Importer**.
+1. Go to **Plugins → Add New** and search for **Smartly Import Export**.
 2. Click **Install Now**, then **Activate**.
-3. Go to **Tools → Simplest Importer**.
+3. Go to **Tools → Smartly Import Export**.
 
 ### Manual
 
-1. Download the [latest release](https://github.com/ahmed-essawy/the-simplest-importer/releases).
-2. Upload the `the-simplest-importer` folder to `/wp-content/plugins/`.
+1. Download the [latest release](https://github.com/ahmed-essawy/smartly-import-export/releases).
+2. Upload the `smartly-import-export` folder to `/wp-content/plugins/`.
 3. Activate through **Plugins** in WordPress admin.
 
 ## Usage
@@ -63,15 +63,15 @@
 
 | Filter | Description |
 |---|---|
-| `tsi_post_types` | Modify the list of post types in the dropdown. |
-| `tsi_post_type_fields` | Modify importable/exportable fields for a post type. |
-| `tsi_import_batch_size` | Change the batch size (default: 50). |
+| `smie_post_types` | Modify the list of post types in the dropdown. |
+| `smie_post_type_fields` | Modify importable/exportable fields for a post type. |
+| `smie_import_batch_size` | Change the batch size (default: 50). |
 
 ### Actions
 
 | Action | Description |
 |---|---|
-| `tsi_after_import_row` | Fires after each row is imported. Receives `$post_id`, `$row`, `$row_num`, `$is_update`. |
+| `smie_after_import_row` | Fires after each row is imported. Receives `$post_id`, `$row`, `$row_num`, `$is_update`. |
 
 ## Contributing
 
@@ -79,4 +79,4 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 
 ## License
 
-This project is licensed under the [GPL-2.0-or-later](LICENSE) license.
+This project is licensed under the [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html) license.

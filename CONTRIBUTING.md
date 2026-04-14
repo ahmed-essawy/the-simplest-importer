@@ -1,4 +1,4 @@
-# Contributing to The Simplest Importer
+# Contributing to Smartly Import Export
 
 Thank you for your interest in contributing! Here's how you can help.
 
@@ -16,8 +16,8 @@ This plugin follows the [WordPress Coding Standards](https://developer.wordpress
 
 - **PHP**: Tabs for indentation, Yoda conditions, spaces inside parentheses.
 - **JavaScript**: IIFE wrapper with `'use strict'`, jQuery passed as `$`.
-- **CSS**: All classes prefixed with `tsi-`.
-- **Prefix**: All PHP functions, hooks, options, and transients use the `tsi_` prefix.
+- **CSS**: All classes prefixed with `smie-`.
+- **Prefix**: All PHP functions, hooks, options, and transients use the `smie_` prefix.
 
 ## Security
 
@@ -29,7 +29,7 @@ This plugin follows the [WordPress Coding Standards](https://developer.wordpress
 ## Internationalization
 
 - Wrap all user-facing strings in `__()`, `_e()`, `esc_html__()`, etc.
-- Text domain: `the-simplest-importer`
+- Text domain: `smartly-import-export`
 
 ## Pull Request Guidelines
 
@@ -40,7 +40,7 @@ This plugin follows the [WordPress Coding Standards](https://developer.wordpress
 
 ## Reporting Bugs
 
-Open a [GitHub Issue](https://github.com/ahmed-essawy/the-simplest-importer/issues) using the Bug Report template.
+Open a [GitHub Issue](https://github.com/ahmed-essawy/smartly-import-export/issues) using the Bug Report template.
 
 ## Security Vulnerabilities
 

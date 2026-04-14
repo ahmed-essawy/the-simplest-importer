@@ -2,104 +2,91 @@
 /**
  * Post edit screen meta box and dashboard widget.
  *
- * @package TheSimplestImporter
+ * @package SmartlyImportExport
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+add_action( 'admin_enqueue_scripts', 'smie_enqueue_meta_box_assets' );
+
+/**
+ * Enqueue the single-export meta box script on post edit screens.
+ *
+ * @param string $hook Current admin page hook.
+ * @return void
+ */
+function smie_enqueue_meta_box_assets( $hook ) {
+	if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+		return;
+	}
+
+	wp_enqueue_script(
+		'smie-meta-box',
+		SMIE_PLUGIN_URL . 'assets/meta-box.js',
+		array(),
+		(string) filemtime( SMIE_PLUGIN_DIR . 'assets/meta-box.js' ),
+		true
+	);
 }
 /* ------------------------------------------------------------------
  * Meta Box — Export single post from edit screen
  * ------------------------------------------------------------------ */
 
 /**
- * Register the TSI meta box on all post types with show_ui.
+ * Register the Smartly Import Export meta box on all post types with show_ui.
  */
-function tsi_register_meta_box() {
+function smie_register_meta_box() {
 	$post_types = get_post_types( array( 'show_ui' => true ), 'names' );
 	foreach ( $post_types as $pt ) {
 		add_meta_box(
-			'tsi-single-export',
-			esc_html__( 'The Simplest Importer', 'the-simplest-importer' ),
-			'tsi_render_meta_box',
+			'smie-single-export',
+			esc_html__( 'Smartly Import Export', 'smartly-import-export' ),
+			'smie_render_meta_box',
 			$pt,
 			'side',
 			'low'
 		);
 	}
 }
-add_action( 'add_meta_boxes', 'tsi_register_meta_box' );
+add_action( 'add_meta_boxes', 'smie_register_meta_box' );
 
 /**
  * Render the meta box content.
  *
  * @param WP_Post $post The current post object.
  */
-function tsi_render_meta_box( $post ) {
-	wp_nonce_field( 'tsi_nonce', 'tsi_meta_box_nonce' );
+function smie_render_meta_box( $post ) {
+	wp_nonce_field( 'smie_nonce', 'smie_meta_box_nonce' );
 	?>
-	<p class="description"><?php esc_html_e( 'Export this post as a CSV file.', 'the-simplest-importer' ); ?></p>
-	<button type="button" class="button button-small" id="tsi-export-single" data-post-id="<?php echo esc_attr( $post->ID ); ?>"><?php esc_html_e( 'Download CSV', 'the-simplest-importer' ); ?></button>
-	<script>
-	(function () {
-		document.getElementById('tsi-export-single').addEventListener('click', function () {
-			var postId = this.getAttribute('data-post-id');
-			var nonce  = document.getElementById('tsi_meta_box_nonce').value;
-			var data   = new FormData();
-			data.append('action', 'tsi_export_single_post');
-				data.append('tsi_meta_box_nonce', nonce);
-			data.append('post_id', postId);
-			fetch(ajaxurl, { method: 'POST', body: data, credentials: 'same-origin' })
-				.then(function (r) { return r.json(); })
-				.then(function (res) {
-					if (!res.success) {
-						window.alert(res.data || 'Export failed.');
-						return;
-					}
-					var raw = atob(res.data.csv);
-					var bytes = new Uint8Array(raw.length);
-					for (var i = 0; i < raw.length; i++) { bytes[i] = raw.charCodeAt(i); }
-					var blob = new Blob([bytes], { type: 'text/csv;charset=utf-8' });
-					var url  = URL.createObjectURL(blob);
-					var a    = document.createElement('a');
-					a.href = url;
-					a.download = res.data.filename;
-					document.body.appendChild(a);
-					a.click();
-					document.body.removeChild(a);
-					URL.revokeObjectURL(url);
-					})
-					.catch(function () {
-						window.alert('Export request failed.');
-					});
-		});
-	})();
-	</script>
+	<p class="description"><?php esc_html_e( 'Export this post as a CSV file.', 'smartly-import-export' ); ?></p>
+	<button type="button" class="button button-small" id="smie-export-single" data-post-id="<?php echo esc_attr( $post->ID ); ?>"><?php esc_html_e( 'Download CSV', 'smartly-import-export' ); ?></button>
 	<?php
 }
 
 /**
  * AJAX handler — export a single post as CSV.
  */
-function tsi_ajax_export_single_post() {
-	check_ajax_referer( 'tsi_nonce', 'tsi_meta_box_nonce' );
+function smie_ajax_export_single_post() {
+	check_ajax_referer( 'smie_nonce', 'smie_meta_box_nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 	if ( ! $post_id ) {
-		wp_send_json_error( esc_html__( 'Invalid post ID.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post ID.', 'smartly-import-export' ) );
 	}
 
 	$post = get_post( $post_id );
 	if ( ! $post ) {
-		wp_send_json_error( esc_html__( 'Post not found.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Post not found.', 'smartly-import-export' ) );
 	}
 
 	$post_type = $post->post_type;
-	$fields    = tsi_get_post_type_fields( $post_type );
+	$fields    = smie_get_post_type_fields( $post_type );
 	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author', 'post_parent' );
 
 	$meta_fields = array();
@@ -151,27 +138,27 @@ function tsi_ajax_export_single_post() {
 		'filename' => sanitize_file_name( $post_type . '-' . $post_id . '-export.csv' ),
 	) );
 }
-add_action( 'wp_ajax_tsi_export_single_post', 'tsi_ajax_export_single_post' );
+add_action( 'wp_ajax_smie_export_single_post', 'smie_ajax_export_single_post' );
 
 /* ------------------------------------------------------------------
  * Dashboard Widget — Import statistics
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_dashboard_setup', 'tsi_register_dashboard_widget' );
+add_action( 'wp_dashboard_setup', 'smie_register_dashboard_widget' );
 
 /**
  * Register a dashboard widget showing recent import activity.
  *
  * @return void
  */
-function tsi_register_dashboard_widget() {
+function smie_register_dashboard_widget() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 	wp_add_dashboard_widget(
-		'tsi_dashboard_widget',
-		__( 'Simplest Importer — Activity', 'the-simplest-importer' ),
-		'tsi_render_dashboard_widget'
+		'smie_dashboard_widget',
+		__( 'Smartly Import Export — Activity', 'smartly-import-export' ),
+		'smie_render_dashboard_widget'
 	);
 }
 
@@ -180,22 +167,22 @@ function tsi_register_dashboard_widget() {
  *
  * @return void
  */
-function tsi_render_dashboard_widget() {
-	$history   = get_option( TSI_HISTORY_OPTION, array() );
-	$schedules = get_option( TSI_SCHEDULES_OPTION, array() );
-	$exports   = get_option( TSI_EXPORT_SCHEDULES_OPTION, array() );
+function smie_render_dashboard_widget() {
+	$history   = smie_get_import_history();
+	$schedules = smie_get_scheduled_imports();
+	$exports   = smie_get_export_schedules();
 
 	/* Recent imports — last 5 */
 	$recent = array_slice( array_reverse( $history ), 0, 5 );
 
 	if ( empty( $recent ) ) {
-		echo '<p>' . esc_html__( 'No imports yet.', 'the-simplest-importer' ) . '</p>';
+		echo '<p>' . esc_html__( 'No imports yet.', 'smartly-import-export' ) . '</p>';
 	} else {
 		echo '<table class="widefat striped" style="border:0"><thead><tr>';
-		echo '<th>' . esc_html__( 'Date', 'the-simplest-importer' ) . '</th>';
-		echo '<th>' . esc_html__( 'Type', 'the-simplest-importer' ) . '</th>';
-		echo '<th>' . esc_html__( 'Rows', 'the-simplest-importer' ) . '</th>';
-		echo '<th>' . esc_html__( 'Status', 'the-simplest-importer' ) . '</th>';
+		echo '<th>' . esc_html__( 'Date', 'smartly-import-export' ) . '</th>';
+		echo '<th>' . esc_html__( 'Type', 'smartly-import-export' ) . '</th>';
+		echo '<th>' . esc_html__( 'Rows', 'smartly-import-export' ) . '</th>';
+		echo '<th>' . esc_html__( 'Status', 'smartly-import-export' ) . '</th>';
 		echo '</tr></thead><tbody>';
 		foreach ( $recent as $entry ) {
 			$date      = isset( $entry['date'] ) ? esc_html( $entry['date'] ) : '—';
@@ -206,9 +193,9 @@ function tsi_render_dashboard_widget() {
 			$total     = $inserted + $updated + $errors;
 			$status    = $errors > 0
 				/* translators: 1: error count, 2: total rows */
-				? sprintf( __( '%1$d errors / %2$d', 'the-simplest-importer' ), $errors, $total )
+				? sprintf( __( '%1$d errors / %2$d', 'smartly-import-export' ), $errors, $total )
 				/* translators: %d: total rows */
-				: sprintf( __( '%d OK', 'the-simplest-importer' ), $total );
+				: sprintf( __( '%d OK', 'smartly-import-export' ), $total );
 
 			echo '<tr>';
 			echo '<td>' . esc_html( $date ) . '</td>';
@@ -223,20 +210,20 @@ function tsi_render_dashboard_widget() {
 	/* Next scheduled import */
 	$next_import = '';
 	foreach ( $schedules as $sch ) {
-		$ts = wp_next_scheduled( 'tsi_scheduled_import', array( isset( $sch['id'] ) ? $sch['id'] : '' ) );
+		$ts = wp_next_scheduled( 'smie_scheduled_import', array( isset( $sch['id'] ) ? $sch['id'] : '' ) );
 		if ( $ts ) {
 			/* translators: %s: human-readable time difference */
-			$next_import = sprintf( __( 'Next import: %s', 'the-simplest-importer' ), human_time_diff( $ts ) . ' ' . __( 'from now', 'the-simplest-importer' ) );
+			$next_import = sprintf( __( 'Next import: %s', 'smartly-import-export' ), human_time_diff( $ts ) . ' ' . __( 'from now', 'smartly-import-export' ) );
 			break;
 		}
 	}
 
 	$next_export = '';
 	foreach ( $exports as $sch ) {
-		$ts = wp_next_scheduled( 'tsi_scheduled_export', array( isset( $sch['id'] ) ? $sch['id'] : '' ) );
+		$ts = wp_next_scheduled( 'smie_scheduled_export', array( isset( $sch['id'] ) ? $sch['id'] : '' ) );
 		if ( $ts ) {
 			/* translators: %s: human-readable time difference */
-			$next_export = sprintf( __( 'Next export: %s', 'the-simplest-importer' ), human_time_diff( $ts ) . ' ' . __( 'from now', 'the-simplest-importer' ) );
+			$next_export = sprintf( __( 'Next export: %s', 'smartly-import-export' ), human_time_diff( $ts ) . ' ' . __( 'from now', 'smartly-import-export' ) );
 			break;
 		}
 	}
@@ -255,6 +242,6 @@ function tsi_render_dashboard_widget() {
 		echo '</p>';
 	}
 
-	echo '<p style="margin:8px 0 0"><a href="' . esc_url( admin_url( 'tools.php?page=the-simplest-importer' ) ) . '">' . esc_html__( 'Open Importer →', 'the-simplest-importer' ) . '</a></p>';
+	echo '<p style="margin:8px 0 0"><a href="' . esc_url( admin_url( 'tools.php?page=smartly-import-export' ) ) . '">' . esc_html__( 'Open Importer →', 'smartly-import-export' ) . '</a></p>';
 }
 

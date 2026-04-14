@@ -1,0 +1,991 @@
+/**
+ * Smartly Import Export — Admin Styles
+ *
+ * @package SmartlyImportExport
+ */
+
+/* ------------------------------------------------------------------
+ * CSS Custom Properties — Light Theme (default)
+ * ------------------------------------------------------------------ */
+
+.smie-wrap {
+	--smie-text-primary: #1d2327;
+	--smie-text-secondary: #50575e;
+	--smie-text-tertiary: #646970;
+	--smie-text-muted: #888;
+	--smie-text-muted-light: #999;
+	--smie-text-on-primary: #fff;
+
+	--smie-bg-page: #fff;
+	--smie-bg-card: #fff;
+	--smie-bg-section: #f9fafb;
+	--smie-bg-table-head: #f6f7f7;
+	--smie-bg-neutral: #f0f0f1;
+	--smie-bg-highlight: #f0f6fc;
+	--smie-bg-success-light: #edfaef;
+	--smie-bg-progress: #e0e0e0;
+	--smie-bg-option: #f9f9f9;
+	--smie-bg-delimiter: #f0f0f0;
+
+	--smie-color-primary: #2271b1;
+	--smie-color-primary-dark: #1a5e99;
+	--smie-color-success: #00a32a;
+	--smie-color-warning: #dba617;
+	--smie-color-error: #d63638;
+
+	--smie-text-success: #00450c;
+	--smie-text-success-log: #00760d;
+	--smie-text-warning-log: #996800;
+	--smie-text-error: #d63638;
+	--smie-text-delimiter: #555;
+
+	--smie-border-default: #c3c4c7;
+	--smie-border-light: #e8e8e8;
+	--smie-border-lighter: #dcdcde;
+	--smie-border-subtle: #ddd;
+	--smie-border-divider: #e0e0e0;
+	--smie-border-row: #f0f0f1;
+	--smie-border-success: #b8e6be;
+	--smie-border-table-section: #eee;
+	--smie-border-select: #8c8f94;
+	--smie-border-profile: #c3d1e0;
+
+	--smie-shadow-subtle: 0 1px 4px rgba(0, 0, 0, 0.04);
+	--smie-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.07);
+	--smie-shadow-primary: 0 4px 12px rgba(34, 113, 177, 0.15);
+	--smie-shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.18);
+	--smie-overlay-bg: rgba(0, 0, 0, 0.45);
+	--smie-inset-primary: inset 0 0 0 2px rgba(34, 113, 177, 0.15);
+}
+
+/* ------------------------------------------------------------------
+ * Dark Theme
+ * ------------------------------------------------------------------ */
+
+.smie-wrap--dark {
+	--smie-text-primary: #e0e0e0;
+	--smie-text-secondary: #b0b5ba;
+	--smie-text-tertiary: #9a9ea3;
+	--smie-text-muted: #8c8f94;
+	--smie-text-muted-light: #787c82;
+	--smie-text-on-primary: #fff;
+
+	--smie-bg-page: #1e1e1e;
+	--smie-bg-card: #2c2c2c;
+	--smie-bg-section: #262626;
+	--smie-bg-table-head: #333;
+	--smie-bg-neutral: #333;
+	--smie-bg-highlight: #1a2e3e;
+	--smie-bg-success-light: #1a2e1e;
+	--smie-bg-progress: #444;
+	--smie-bg-option: #2a2a2a;
+	--smie-bg-delimiter: #333;
+
+	--smie-color-primary: #5ba7e6;
+	--smie-color-primary-dark: #4a8cc7;
+	--smie-color-success: #4caf50;
+	--smie-color-warning: #f0c33c;
+	--smie-color-error: #ef5350;
+
+	--smie-text-success: #81c784;
+	--smie-text-success-log: #66bb6a;
+	--smie-text-warning-log: #ffb74d;
+	--smie-text-error: #ef5350;
+	--smie-text-delimiter: #aaa;
+
+	--smie-border-default: #444;
+	--smie-border-light: #3a3a3a;
+	--smie-border-lighter: #444;
+	--smie-border-subtle: #3a3a3a;
+	--smie-border-divider: #3a3a3a;
+	--smie-border-row: #333;
+	--smie-border-success: #2e7d32;
+	--smie-border-table-section: #3a3a3a;
+	--smie-border-select: #555;
+	--smie-border-profile: #3a5068;
+
+	--smie-shadow-subtle: 0 1px 4px rgba(0, 0, 0, 0.2);
+	--smie-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+	--smie-shadow-primary: 0 4px 12px rgba(91, 167, 230, 0.2);
+	--smie-shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
+	--smie-overlay-bg: rgba(0, 0, 0, 0.65);
+	--smie-inset-primary: inset 0 0 0 2px rgba(91, 167, 230, 0.2);
+}
+
+/* Dark mode overrides for WP admin native elements */
+.smie-wrap--dark .button,
+.smie-wrap--dark .button-secondary {
+	background: var(--smie-bg-neutral);
+	border-color: var(--smie-border-default);
+	color: var(--smie-text-primary);
+}
+
+.smie-wrap--dark .button:hover,
+.smie-wrap--dark .button-secondary:hover {
+	background: var(--smie-border-default);
+	border-color: var(--smie-border-select);
+	color: var(--smie-text-on-primary);
+}
+
+.smie-wrap--dark .button-primary {
+	background: var(--smie-color-primary);
+	border-color: var(--smie-color-primary-dark);
+	color: var(--smie-text-on-primary);
+}
+
+.smie-wrap--dark .button-primary:hover {
+	background: var(--smie-color-primary-dark);
+	border-color: var(--smie-color-primary-dark);
+}
+
+.smie-wrap--dark select,
+.smie-wrap--dark input[type="text"],
+.smie-wrap--dark input[type="number"],
+.smie-wrap--dark input[type="url"],
+.smie-wrap--dark input[type="date"],
+.smie-wrap--dark textarea {
+	background: var(--smie-bg-card);
+	border-color: var(--smie-border-default);
+	color: var(--smie-text-primary);
+}
+
+.smie-wrap--dark .description {
+	color: var(--smie-text-tertiary);
+}
+
+.smie-wrap--dark .notice {
+	background: var(--smie-bg-card);
+	border-color: var(--smie-border-default);
+	color: var(--smie-text-primary);
+}
+
+/* ------------------------------------------------------------------
+ * Dark Mode Toggle
+ * ------------------------------------------------------------------ */
+
+.smie-dark-toggle {
+	background: none;
+	border: 1px solid var(--smie-border-default);
+	border-radius: 4px;
+	padding: 4px 8px;
+	cursor: pointer;
+	color: var(--smie-text-secondary);
+	font-size: 16px;
+	line-height: 1;
+	transition: color 0.2s, border-color 0.2s;
+}
+
+.smie-dark-toggle:hover {
+	color: var(--smie-color-primary);
+	border-color: var(--smie-color-primary);
+}
+
+.smie-dark-toggle .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	vertical-align: middle;
+}
+
+/* ------------------------------------------------------------------
+ * Layout
+ * ------------------------------------------------------------------ */
+
+.smie-wrap {
+	max-width: 100%;
+	margin-top: 20px;
+	padding-right: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Header
+ * ------------------------------------------------------------------ */
+
+.smie-header {
+	margin-bottom: 24px;
+}
+
+.smie-header h1 {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 23px;
+	font-weight: 400;
+	color: var(--smie-text-primary);
+}
+
+.smie-header h1 .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	color: var(--smie-color-primary);
+}
+
+.smie-subtitle {
+	margin: 4px 0 0;
+	color: var(--smie-text-secondary);
+	font-size: 13px;
+}
+
+/* ------------------------------------------------------------------
+ * Card
+ * ------------------------------------------------------------------ */
+
+.smie-card {
+	background: var(--smie-bg-card);
+	border: 1px solid var(--smie-border-default);
+	border-radius: 8px;
+	margin-bottom: 16px;
+	box-shadow: var(--smie-shadow-subtle);
+	overflow: hidden;
+	transition: box-shadow 0.2s ease;
+}
+
+.smie-card:hover {
+	box-shadow: var(--smie-shadow-hover);
+}
+
+.smie-card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	padding: 18px 24px;
+	background: var(--smie-bg-section);
+	border-bottom: 1px solid var(--smie-border-light);
+}
+
+.smie-card-header h2 {
+	margin: 0 0 2px;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--smie-text-primary);
+	line-height: 1.3;
+}
+
+.smie-card-header p {
+	margin: 0;
+	font-size: 12.5px;
+	color: var(--smie-text-tertiary);
+}
+
+.smie-card-body {
+	padding: 20px 24px;
+}
+
+/* ------------------------------------------------------------------
+ * Step Number Badge
+ * ------------------------------------------------------------------ */
+
+.smie-step-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	min-width: 34px;
+	border-radius: 50%;
+	background: var(--smie-color-primary);
+	color: var(--smie-text-on-primary);
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	margin-top: 2px;
+}
+
+.smie-step-num--active {
+	background: transparent;
+	width: auto;
+	height: auto;
+	min-width: auto;
+}
+
+.smie-step-num--active .spinner {
+	margin: 0;
+}
+
+.smie-step-num--done {
+	background: var(--smie-color-success);
+}
+
+.smie-step-num--done .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Select Dropdown
+ * ------------------------------------------------------------------ */
+
+.smie-select {
+	min-width: 320px;
+	max-width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	border: 1px solid var(--smie-border-select);
+	border-radius: 4px;
+	background: var(--smie-bg-card);
+	line-height: 1.5;
+}
+
+.smie-select:focus {
+	border-color: var(--smie-color-primary);
+	box-shadow: 0 0 0 1px var(--smie-color-primary);
+	outline: none;
+}
+
+/* ------------------------------------------------------------------
+ * Action Cards
+ * ------------------------------------------------------------------ */
+
+.smie-action-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+}
+
+.smie-action-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 28px 16px;
+	border: 2px solid var(--smie-border-lighter);
+	border-radius: 8px;
+	background: var(--smie-bg-card);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-align: center;
+}
+
+.smie-action-card:hover {
+	border-color: var(--smie-color-primary);
+	box-shadow: var(--smie-shadow-primary);
+	transform: translateY(-2px);
+}
+
+.smie-action-card:focus {
+	outline: 2px solid var(--smie-color-primary);
+	outline-offset: 2px;
+}
+
+.smie-action-card .dashicons {
+	font-size: 32px;
+	width: 32px;
+	height: 32px;
+	color: var(--smie-color-primary);
+}
+
+.smie-action-card strong {
+	font-size: 15px;
+	color: var(--smie-text-primary);
+}
+
+.smie-action-desc {
+	font-size: 12px;
+	color: var(--smie-text-tertiary);
+	line-height: 1.4;
+}
+
+/* ------------------------------------------------------------------
+ * Source Tabs
+ * ------------------------------------------------------------------ */
+
+.smie-source-tabs {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.smie-source-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 18px;
+	border: 1px solid var(--smie-border-default);
+	border-radius: 6px;
+	background: var(--smie-bg-neutral);
+	color: var(--smie-text-secondary);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.smie-source-tab .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.smie-source-tab:hover {
+	background: var(--smie-border-light);
+}
+
+.smie-source-tab--active {
+	background: var(--smie-bg-card);
+	border-color: var(--smie-color-primary);
+	color: var(--smie-color-primary);
+	box-shadow: 0 0 0 1px var(--smie-color-primary);
+}
+
+/* ------------------------------------------------------------------
+ * Dropzone
+ * ------------------------------------------------------------------ */
+
+.smie-dropzone {
+	border: 2px dashed var(--smie-border-default);
+	border-radius: 8px;
+	padding: 8px;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.smie-dropzone:hover,
+.smie-dropzone.smie-drag-over {
+	border-color: var(--smie-color-primary);
+	background: var(--smie-bg-highlight);
+}
+
+.smie-dropzone.smie-drag-over {
+	border-style: solid;
+	box-shadow: var(--smie-inset-primary);
+}
+
+.smie-dropzone-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 32px 16px;
+	text-align: center;
+}
+
+.smie-dropzone-inner > .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: var(--smie-border-default);
+	margin-bottom: 12px;
+	transition: color 0.2s;
+}
+
+.smie-dropzone:hover .dashicons,
+.smie-dropzone.smie-drag-over .dashicons {
+	color: var(--smie-color-primary);
+}
+
+.smie-dropzone-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--smie-text-primary);
+	margin: 0 0 4px;
+}
+
+.smie-dropzone-or {
+	font-size: 12px;
+	color: var(--smie-text-muted-light);
+	margin: 4px 0 10px;
+}
+
+.smie-dropzone .description {
+	margin-top: 14px;
+	font-size: 12px;
+	color: var(--smie-text-muted);
+}
+
+#smie-csv-file {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+}
+
+/* ------------------------------------------------------------------
+ * URL Row
+ * ------------------------------------------------------------------ */
+
+.smie-url-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+#smie-csv-url {
+	flex: 1;
+	min-width: 0;
+	max-width: 440px;
+}
+
+/* ------------------------------------------------------------------
+ * File Info Badge
+ * ------------------------------------------------------------------ */
+
+.smie-file-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+	padding: 12px 16px;
+	background: var(--smie-bg-success-light);
+	border: 1px solid var(--smie-border-success);
+	border-radius: 6px;
+	color: var(--smie-text-success);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.smie-file-info .dashicons {
+	color: var(--smie-color-success);
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * Data Preview Table
+ * ------------------------------------------------------------------ */
+
+#smie-preview {
+	margin-top: 16px;
+}
+
+#smie-preview h3 {
+	font-size: 13px;
+	font-weight: 600;
+	margin: 0 0 8px;
+	color: var(--smie-text-primary);
+}
+
+.smie-preview-meta {
+	font-weight: 400;
+	color: var(--smie-text-muted);
+	font-size: 12px;
+}
+
+.smie-preview-scroll {
+	overflow-x: auto;
+	border: 1px solid var(--smie-border-divider);
+	border-radius: 4px;
+}
+
+.smie-preview-table {
+	border: none !important;
+	border-collapse: collapse;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.smie-preview-table th {
+	background: var(--smie-bg-table-head);
+	font-weight: 600;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--smie-text-secondary);
+	padding: 8px 12px;
+	border-bottom: 2px solid var(--smie-border-subtle);
+}
+
+.smie-preview-table td {
+	padding: 6px 12px;
+	color: var(--smie-text-primary);
+	border-bottom: 1px solid var(--smie-border-row);
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.smie-preview-table tr:last-child td {
+	border-bottom: none;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Toolbar
+ * ------------------------------------------------------------------ */
+
+.smie-mapping-toolbar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.smie-mapping-count {
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--smie-text-tertiary);
+}
+
+/* ------------------------------------------------------------------
+ * Field Search
+ * ------------------------------------------------------------------ */
+
+.smie-field-search {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 12px;
+	position: relative;
+}
+
+.smie-field-search-icon {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: var(--smie-text-muted);
+}
+
+.smie-field-search-input {
+	flex: 1;
+	max-width: 280px;
+	padding: 5px 10px;
+	border: 1px solid var(--smie-border-default);
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.smie-field-search-count {
+	display: none;
+	font-size: 12px;
+	color: var(--smie-text-tertiary);
+	white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Table
+ * ------------------------------------------------------------------ */
+
+.smie-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--smie-border-divider);
+	border-radius: 6px;
+}
+
+.smie-mapping-table {
+	border: none !important;
+	border-collapse: collapse;
+	margin: 0;
+}
+
+.smie-mapping-table thead th {
+	background: var(--smie-bg-table-head);
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--smie-text-secondary);
+	padding: 10px 14px;
+	border-bottom: 2px solid var(--smie-border-subtle);
+}
+
+.smie-mapping-table tbody td {
+	padding: 10px 14px;
+	vertical-align: middle;
+	border-bottom: 1px solid var(--smie-border-row);
+}
+
+.smie-mapping-table tbody tr:hover {
+	background: var(--smie-bg-section);
+}
+
+.smie-mapping-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.smie-col-check {
+	width: 44px;
+	text-align: center;
+}
+
+.smie-col-field {
+	white-space: nowrap;
+}
+
+.smie-col-field code {
+	font-size: 11px;
+	color: var(--smie-text-muted);
+}
+
+.smie-col-select {
+	width: 100%;
+	max-width: 260px;
+	padding: 5px 8px;
+	font-size: 13px;
+}
+
+.smie-custom-value,
+.smie-merge-template {
+	display: none;
+	margin-top: 6px !important;
+	max-width: 260px;
+}
+
+.smie-extra-row {
+	background: var(--smie-bg-highlight) !important;
+}
+
+.smie-extra-key {
+	max-width: 180px;
+	font-family: monospace;
+	font-size: 13px;
+}
+
+.smie-remove-extra {
+	color: var(--smie-color-error) !important;
+	margin-left: 8px !important;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+/* ------------------------------------------------------------------
+ * Mapping Footer
+ * ------------------------------------------------------------------ */
+
+.smie-mapping-actions {
+	display: flex;
+	flex-direction: column;
+	margin-top: 16px;
+	gap: 16px;
+}
+
+.smie-mapping-actions #smie-add-extra .dashicons {
+	vertical-align: middle;
+	margin-top: -2px;
+}
+
+/* Import Settings collapsible */
+.smie-import-settings {
+	border: 1px solid var(--smie-border-lighter);
+	border-radius: 6px;
+	background: var(--smie-bg-section);
+}
+
+.smie-import-settings > summary {
+	cursor: pointer;
+	padding: 10px 16px;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--smie-text-primary);
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.smie-import-settings > summary:hover {
+	color: var(--smie-color-primary);
+}
+
+.smie-import-settings-body {
+	padding: 0 16px 16px;
+}
+
+.smie-import-settings-body .smie-import-options {
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: none;
+}
+
+.smie-import-settings-body .smie-filter-section {
+	margin: 12px 0 0;
+	border-color: var(--smie-border-divider);
+}
+
+.smie-btn-run {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 6px;
+}
+
+.smie-btn-run .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.smie-import-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--smie-border-divider);
+}
+
+/* ------------------------------------------------------------------
+ * Progress
+ * ------------------------------------------------------------------ */
+
+.smie-progress {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.smie-progress-bar {
+	flex: 1;
+	height: 22px;
+	background: var(--smie-bg-progress);
+	border-radius: 11px;
+	overflow: hidden;
+	position: relative;
+}
+
+.smie-progress-fill {
+	height: 100%;
+	width: 0;
+	border-radius: 11px;
+	background: linear-gradient(135deg, var(--smie-color-primary) 25%, var(--smie-color-primary-dark) 25%, var(--smie-color-primary-dark) 50%, var(--smie-color-primary) 50%, var(--smie-color-primary) 75%, var(--smie-color-primary-dark) 75%);
+	background-size: 20px 20px;
+	animation: smie-stripes 0.6s linear infinite;
+	transition: width 0.35s ease;
+}
+
+@keyframes smie-stripes {
+	0% { background-position: 20px 0; }
+	100% { background-position: 0 0; }
+}
+
+.smie-progress-pct {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--smie-color-primary);
+	min-width: 40px;
+	text-align: right;
+}
+
+/* ------------------------------------------------------------------
+ * Live Log (during import)
+ * ------------------------------------------------------------------ */
+
+.smie-live-log {
+	max-height: 200px;
+	overflow-y: auto;
+	font-family: monospace;
+	font-size: 11.5px;
+	line-height: 1.7;
+	padding: 10px 14px;
+	background: var(--smie-bg-table-head);
+	border: 1px solid var(--smie-border-divider);
+	border-radius: 4px;
+	color: var(--smie-text-secondary);
+}
+
+/* ------------------------------------------------------------------
+ * Result Summary Badges
+ * ------------------------------------------------------------------ */
+
+.smie-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.smie-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--smie-text-on-primary);
+}
+
+.smie-badge-inserted { background: var(--smie-color-success); }
+.smie-badge-updated  { background: var(--smie-color-primary); }
+.smie-badge-skipped  { background: var(--smie-color-warning); color: var(--smie-text-primary); }
+.smie-badge-errors   { background: var(--smie-color-error); }
+
+.smie-badge .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+/* ------------------------------------------------------------------
+ * Result Log
+ * ------------------------------------------------------------------ */
+
+.smie-log {
+	max-height: 360px;
+	overflow-y: auto;
+	border: 1px solid var(--smie-border-divider);
+	border-radius: 6px;
+	padding: 12px 16px;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.8;
+	background: var(--smie-bg-section);
+}
+
+.smie-log-ok    { color: var(--smie-text-success-log); }
+.smie-log-skip  { color: var(--smie-text-warning-log); }
+.smie-log-error { color: var(--smie-text-error); font-weight: 600; }
+
+/* ------------------------------------------------------------------
+ * Result Actions
+ * ------------------------------------------------------------------ */
+
+.smie-results-actions {
+	margin-top: 16px;
+	display: flex;
+	gap: 8px;
+}
+
+.smie-results-actions .dashicons {
+	vertical-align: middle;
+	margin-top: -2px;
+}
+
+/* ------------------------------------------------------------------
+ * Overlay (Export & Template)
+ * ------------------------------------------------------------------ */
+
+.smie-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	background: var(--smie-overlay-bg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.smie-overlay-inner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: var(--smie-bg-card);
+	padding: 24px 36px;
+	border-radius: 8px;
+	box-shadow: var(--smie-shadow-modal);
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--smie-text-primary);
+}
+
+.smie-overlay-inner .spinner {
+	float: none;
+	margin: 0;
+}
+
+/* ------------------------------------------------------------------
+ * Focus — Keyboard accessibility
+ * ------------------------------------------------------------------ */
+
+.smie-wrap button:focus-visible,
+.smie-wrap select:focus-visible,
+.smie-wrap input:focus-visible,
+.smie-wrap a:focus-visible {
+	outline: 2px solid var(--smie-color-primary);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 1px var(--smie-text-on-primary);
+}
+

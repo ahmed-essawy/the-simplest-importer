@@ -2,7 +2,7 @@
 /**
  * Core AJAX handlers: post types, fields, file parsing.
  *
- * @package TheSimplestImporter
+ * @package SmartlyImportExport
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,18 +12,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * AJAX — Get post types
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_get_post_types', 'tsi_ajax_get_post_types' );
+add_action( 'wp_ajax_smie_get_post_types', 'smie_ajax_get_post_types' );
 
 /**
  * Return available post types with post counts.
  *
  * @return void
  */
-function tsi_ajax_get_post_types() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_get_post_types() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$types = get_post_types( array( 'show_ui' => true ), 'objects' );
@@ -76,7 +76,7 @@ function tsi_ajax_get_post_types() {
 	 *
 	 * @param array $result Array of post type data.
 	 */
-	$result = apply_filters( 'tsi_post_types', $result );
+	$result = smie_apply_filters( 'smie_post_types', $result );
 
 	wp_send_json_success( $result );
 }
@@ -85,26 +85,26 @@ function tsi_ajax_get_post_types() {
  * AJAX — Get fields for a post type
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_get_fields', 'tsi_ajax_get_fields' );
+add_action( 'wp_ajax_smie_get_fields', 'smie_ajax_get_fields' );
 
 /**
  * Return importable fields for a given post type.
  *
  * @return void
  */
-function tsi_ajax_get_fields() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_get_fields() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 	if ( ! $post_type || ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
-	wp_send_json_success( tsi_get_post_type_fields( $post_type ) );
+	wp_send_json_success( smie_get_post_type_fields( $post_type ) );
 }
 
 /**
@@ -113,24 +113,24 @@ function tsi_ajax_get_fields() {
  * @param string $post_type The post type slug.
  * @return array Associative array of field_key => label.
  */
-function tsi_get_post_type_fields( $post_type ) {
+function smie_get_post_type_fields( $post_type ) {
 	$fields = array(
-		'ID'           => __( 'ID (update existing)', 'the-simplest-importer' ),
-		'post_title'   => __( 'Title', 'the-simplest-importer' ),
-		'post_content' => __( 'Content', 'the-simplest-importer' ),
-		'post_excerpt' => __( 'Excerpt', 'the-simplest-importer' ),
-		'post_status'  => __( 'Status', 'the-simplest-importer' ),
-		'post_date'    => __( 'Date', 'the-simplest-importer' ),
-		'post_name'    => __( 'Slug', 'the-simplest-importer' ),
-		'post_author'  => __( 'Author ID', 'the-simplest-importer' ),
-		'post_parent'  => __( 'Parent (ID or title)', 'the-simplest-importer' ),
+		'ID'           => __( 'ID (update existing)', 'smartly-import-export' ),
+		'post_title'   => __( 'Title', 'smartly-import-export' ),
+		'post_content' => __( 'Content', 'smartly-import-export' ),
+		'post_excerpt' => __( 'Excerpt', 'smartly-import-export' ),
+		'post_status'  => __( 'Status', 'smartly-import-export' ),
+		'post_date'    => __( 'Date', 'smartly-import-export' ),
+		'post_name'    => __( 'Slug', 'smartly-import-export' ),
+		'post_author'  => __( 'Author ID', 'smartly-import-export' ),
+		'post_parent'  => __( 'Parent (ID or title)', 'smartly-import-export' ),
 	);
 
 	/* Taxonomies */
 	$taxonomies = get_object_taxonomies( $post_type, 'objects' );
 	foreach ( $taxonomies as $tax_slug => $tax_obj ) {
 		/* translators: %s: taxonomy singular name */
-		$fields[ 'tax__' . $tax_slug ] = sprintf( __( 'Tax: %s', 'the-simplest-importer' ), $tax_obj->labels->singular_name );
+		$fields[ 'tax__' . $tax_slug ] = sprintf( __( 'Tax: %s', 'smartly-import-export' ), $tax_obj->labels->singular_name );
 	}
 
 	/* Meta keys already in use */
@@ -154,23 +154,23 @@ function tsi_get_post_type_fields( $post_type ) {
 			continue;
 		}
 		/* translators: %s: meta key name */
-		$fields[ 'meta__' . $key ] = sprintf( __( 'Meta: %s', 'the-simplest-importer' ), $key );
+		$fields[ 'meta__' . $key ] = sprintf( __( 'Meta: %s', 'smartly-import-export' ), $key );
 	}
 
-	$fields['_thumbnail_url']       = __( 'Featured Image URL', 'the-simplest-importer' );
-	$fields['_product_gallery_urls'] = __( 'Image Gallery URLs (comma-separated)', 'the-simplest-importer' );
+	$fields['_thumbnail_url']       = __( 'Featured Image URL', 'smartly-import-export' );
+	$fields['_product_gallery_urls'] = __( 'Image Gallery URLs (comma-separated)', 'smartly-import-export' );
 
 	/* SEO plugin fields — auto-detect Yoast SEO or Rank Math */
 	if ( defined( 'WPSEO_VERSION' ) ) {
-		$fields['meta___yoast_wpseo_title']    = __( 'SEO: Title (Yoast)', 'the-simplest-importer' );
-		$fields['meta___yoast_wpseo_metadesc'] = __( 'SEO: Description (Yoast)', 'the-simplest-importer' );
-		$fields['meta___yoast_wpseo_focuskw']  = __( 'SEO: Focus Keyword (Yoast)', 'the-simplest-importer' );
+		$fields['meta___yoast_wpseo_title']    = __( 'SEO: Title (Yoast)', 'smartly-import-export' );
+		$fields['meta___yoast_wpseo_metadesc'] = __( 'SEO: Description (Yoast)', 'smartly-import-export' );
+		$fields['meta___yoast_wpseo_focuskw']  = __( 'SEO: Focus Keyword (Yoast)', 'smartly-import-export' );
 	}
 
 	if ( class_exists( 'RankMath' ) || defined( 'RANK_MATH_VERSION' ) ) {
-		$fields['meta__rank_math_title']       = __( 'SEO: Title (Rank Math)', 'the-simplest-importer' );
-		$fields['meta__rank_math_description'] = __( 'SEO: Description (Rank Math)', 'the-simplest-importer' );
-		$fields['meta__rank_math_focus_keyword'] = __( 'SEO: Focus Keyword (Rank Math)', 'the-simplest-importer' );
+		$fields['meta__rank_math_title']       = __( 'SEO: Title (Rank Math)', 'smartly-import-export' );
+		$fields['meta__rank_math_description'] = __( 'SEO: Description (Rank Math)', 'smartly-import-export' );
+		$fields['meta__rank_math_focus_keyword'] = __( 'SEO: Focus Keyword (Rank Math)', 'smartly-import-export' );
 	}
 
 	/* ACF fields — auto-detect Advanced Custom Fields */
@@ -196,13 +196,13 @@ function tsi_get_post_type_fields( $post_type ) {
 				if ( isset( $fields[ $key ] ) ) {
 					/* Upgrade label from raw meta to friendly ACF label */
 					/* translators: %s: ACF field label */
-					$fields[ $key ] = sprintf( __( 'ACF: %s', 'the-simplest-importer' ), $acf_field['label'] );
+					$fields[ $key ] = sprintf( __( 'ACF: %s', 'smartly-import-export' ), $acf_field['label'] );
 				} elseif ( in_array( $acf_field['type'], $acf_simple_types, true ) ) {
 					/* translators: %s: ACF field label */
-					$fields[ $key ] = sprintf( __( 'ACF: %s', 'the-simplest-importer' ), $acf_field['label'] );
+					$fields[ $key ] = sprintf( __( 'ACF: %s', 'smartly-import-export' ), $acf_field['label'] );
 				} elseif ( 'image' === $acf_field['type'] || 'file' === $acf_field['type'] ) {
 					/* translators: 1: ACF field label, 2: field type */
-					$fields[ $key ] = sprintf( __( 'ACF: %1$s (%2$s URL)', 'the-simplest-importer' ), $acf_field['label'], $acf_field['type'] );
+					$fields[ $key ] = sprintf( __( 'ACF: %1$s (%2$s URL)', 'smartly-import-export' ), $acf_field['label'], $acf_field['type'] );
 				}
 			}
 		}
@@ -214,29 +214,29 @@ function tsi_get_post_type_fields( $post_type ) {
 	 * @param array  $fields    Associative array of field_key => label.
 	 * @param string $post_type The post type slug.
 	 */
-	return apply_filters( 'tsi_post_type_fields', $fields, $post_type );
+	return smie_apply_filters( 'smie_post_type_fields', $fields, $post_type );
 }
 
 /* ------------------------------------------------------------------
  * AJAX — Parse uploaded CSV (file)
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_parse_csv', 'tsi_ajax_parse_csv' );
+add_action( 'wp_ajax_smie_parse_csv', 'smie_ajax_parse_csv' );
 
 /**
  * Parse an uploaded CSV file and store rows in a transient.
  *
  * @return void
  */
-function tsi_ajax_parse_csv() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_parse_csv() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	if ( empty( $_FILES['csv_file'] ) ) {
-		wp_send_json_error( esc_html__( 'No file uploaded.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'No file uploaded.', 'smartly-import-export' ) );
 	}
 
 	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File array handled by PHP/WP upload processing.
@@ -244,7 +244,7 @@ function tsi_ajax_parse_csv() {
 
 	$ext = strtolower( pathinfo( sanitize_file_name( $file['name'] ), PATHINFO_EXTENSION ) );
 	if ( ! in_array( $ext, array( 'csv', 'json', 'xml' ), true ) ) {
-		wp_send_json_error( esc_html__( 'Only .csv, .json, and .xml files are allowed.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Only .csv, .json, and .xml files are allowed.', 'smartly-import-export' ) );
 	}
 
 	$finfo = finfo_open( FILEINFO_MIME_TYPE );
@@ -262,10 +262,10 @@ function tsi_ajax_parse_csv() {
 		'application/xml',
 	);
 	if ( ! in_array( $mime, $allowed, true ) ) {
-		wp_send_json_error( esc_html__( 'Invalid file type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid file type.', 'smartly-import-export' ) );
 	}
 
-	$result = tsi_read_import_file( $file['tmp_name'], $ext );
+	$result = smie_read_import_file( $file['tmp_name'], $ext );
 	if ( is_string( $result ) ) {
 		wp_send_json_error( $result );
 	}
@@ -277,42 +277,42 @@ function tsi_ajax_parse_csv() {
  * AJAX — Parse CSV from a URL
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_parse_csv_url', 'tsi_ajax_parse_csv_url' );
+add_action( 'wp_ajax_smie_parse_csv_url', 'smie_ajax_parse_csv_url' );
 
 /**
  * Fetch a remote CSV by URL and parse it.
  *
  * @return void
  */
-function tsi_ajax_parse_csv_url() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_parse_csv_url() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$url = isset( $_POST['csv_url'] ) ? esc_url_raw( wp_unslash( $_POST['csv_url'] ) ) : '';
 	if ( ! $url || ! wp_http_validate_url( $url ) ) {
-		wp_send_json_error( esc_html__( 'Invalid URL.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid URL.', 'smartly-import-export' ) );
 	}
 
 	/* Auto-convert Google Sheets URL to CSV export URL */
-	$url = tsi_convert_google_sheets_url( $url );
+	$url = smie_convert_google_sheets_url( $url );
 
 	$response = wp_remote_get( $url, array( 'timeout' => 30 ) );
 	if ( is_wp_error( $response ) ) {
 		wp_send_json_error(
 			/* translators: %s: HTTP error message */
-			sprintf( esc_html__( 'Failed to fetch: %s', 'the-simplest-importer' ), $response->get_error_message() )
+			sprintf( esc_html__( 'Failed to fetch: %s', 'smartly-import-export' ), $response->get_error_message() )
 		);
 	}
 
 	$body = wp_remote_retrieve_body( $response );
 	if ( empty( $body ) ) {
-		wp_send_json_error( esc_html__( 'Empty response from URL.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Empty response from URL.', 'smartly-import-export' ) );
 	}
 
-	$tmp = wp_tempnam( 'tsi_csv_' );
+	$tmp = wp_tempnam( 'smie_csv_' );
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for CSV parsing.
 	file_put_contents( $tmp, $body );
 
@@ -327,7 +327,7 @@ function tsi_ajax_parse_csv_url() {
 		$format = 'xml';
 	}
 
-	$result = tsi_read_import_file( $tmp, $format );
+	$result = smie_read_import_file( $tmp, $format );
 	wp_delete_file( $tmp );
 
 	if ( is_string( $result ) ) {
@@ -345,11 +345,11 @@ function tsi_ajax_parse_csv_url() {
  * @param string $filepath Absolute path to the CSV file.
  * @return array|string Parsed data array on success, error message on failure.
  */
-function tsi_read_csv_file( $filepath ) {
+function smie_read_csv_file( $filepath ) {
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- fopen needed for fgetcsv streaming.
 	$handle = fopen( $filepath, 'r' );
 	if ( ! $handle ) {
-		return esc_html__( 'Cannot read file.', 'the-simplest-importer' );
+		return esc_html__( 'Cannot read file.', 'smartly-import-export' );
 	}
 
 	/* Skip BOM */
@@ -382,7 +382,7 @@ function tsi_read_csv_file( $filepath ) {
 	if ( ! $headers ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing fgetcsv stream handle.
 		fclose( $handle );
-		return esc_html__( 'Empty CSV or invalid format.', 'the-simplest-importer' );
+		return esc_html__( 'Empty CSV or invalid format.', 'smartly-import-export' );
 	}
 
 	$headers = array_map( 'trim', $headers );
@@ -398,7 +398,7 @@ function tsi_read_csv_file( $filepath ) {
 	fclose( $handle );
 
 	if ( empty( $rows ) ) {
-		return esc_html__( 'CSV file contains headers but no data rows.', 'the-simplest-importer' );
+		return esc_html__( 'CSV file contains headers but no data rows.', 'smartly-import-export' );
 	}
 
 	/**
@@ -410,7 +410,7 @@ function tsi_read_csv_file( $filepath ) {
 	 *     @type string $delimiter Detected delimiter character.
 	 * }
 	 */
-	$csv_data = apply_filters( 'tsi_csv_parsed', array(
+	$csv_data = smie_apply_filters( 'smie_csv_parsed', array(
 		'headers'   => $headers,
 		'rows'      => $rows,
 		'delimiter' => $delimiter,
@@ -421,13 +421,13 @@ function tsi_read_csv_file( $filepath ) {
 	$delimiter = $csv_data['delimiter'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
+	smie_set_import_data_transient( $token, $csv_data );
 
 	$delimiter_labels = array(
-		','  => __( 'comma', 'the-simplest-importer' ),
-		';'  => __( 'semicolon', 'the-simplest-importer' ),
-		"\t" => __( 'tab', 'the-simplest-importer' ),
-		'|'  => __( 'pipe', 'the-simplest-importer' ),
+		','  => __( 'comma', 'smartly-import-export' ),
+		';'  => __( 'semicolon', 'smartly-import-export' ),
+		"\t" => __( 'tab', 'smartly-import-export' ),
+		'|'  => __( 'pipe', 'smartly-import-export' ),
 	);
 
 	return array(
@@ -444,8 +444,8 @@ function tsi_read_csv_file( $filepath ) {
  *
  * @return int
  */
-function tsi_get_import_data_ttl() {
-	$ttl = (int) apply_filters( 'tsi_import_data_ttl', DAY_IN_SECONDS );
+function smie_get_import_data_ttl() {
+	$ttl = (int) smie_apply_filters( 'smie_import_data_ttl', DAY_IN_SECONDS );
 
 	if ( $ttl < HOUR_IN_SECONDS ) {
 		return HOUR_IN_SECONDS;
@@ -463,16 +463,16 @@ function tsi_get_import_data_ttl() {
  * @param string $filepath Absolute path to the JSON file.
  * @return array|string Parsed data array on success, error message on failure.
  */
-function tsi_read_json_file( $filepath ) {
+function smie_read_json_file( $filepath ) {
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- Reading local temp file for JSON parsing.
 	$raw = file_get_contents( $filepath );
 	if ( false === $raw || '' === trim( $raw ) ) {
-		return esc_html__( 'Cannot read file or file is empty.', 'the-simplest-importer' );
+		return esc_html__( 'Cannot read file or file is empty.', 'smartly-import-export' );
 	}
 
 	$data = json_decode( $raw, true );
 	if ( null === $data || JSON_ERROR_NONE !== json_last_error() ) {
-		return esc_html__( 'Invalid JSON format.', 'the-simplest-importer' );
+		return esc_html__( 'Invalid JSON format.', 'smartly-import-export' );
 	}
 
 	/* If root is an object, look for the first array value */
@@ -486,12 +486,12 @@ function tsi_read_json_file( $filepath ) {
 			}
 		}
 		if ( ! $found ) {
-			return esc_html__( 'JSON must contain an array of objects.', 'the-simplest-importer' );
+			return esc_html__( 'JSON must contain an array of objects.', 'smartly-import-export' );
 		}
 	}
 
 	if ( empty( $data ) ) {
-		return esc_html__( 'JSON array is empty.', 'the-simplest-importer' );
+		return esc_html__( 'JSON array is empty.', 'smartly-import-export' );
 	}
 
 	/* Flatten nested keys with dot notation and collect all unique keys */
@@ -503,7 +503,7 @@ function tsi_read_json_file( $filepath ) {
 			continue;
 		}
 		$flat = array();
-		tsi_flatten_array( $item, $flat, '' );
+		smie_flatten_array( $item, $flat, '' );
 		$flat_rows[] = $flat;
 		foreach ( array_keys( $flat ) as $k ) {
 			$all_keys[ $k ] = true;
@@ -511,7 +511,7 @@ function tsi_read_json_file( $filepath ) {
 	}
 
 	if ( empty( $flat_rows ) ) {
-		return esc_html__( 'JSON contains no valid row objects.', 'the-simplest-importer' );
+		return esc_html__( 'JSON contains no valid row objects.', 'smartly-import-export' );
 	}
 
 	$headers = array_keys( $all_keys );
@@ -527,8 +527,8 @@ function tsi_read_json_file( $filepath ) {
 		$rows[] = $row;
 	}
 
-	/** This filter is documented in tsi_read_csv_file */
-	$csv_data = apply_filters( 'tsi_csv_parsed', array(
+	/** This filter is documented in smie_read_csv_file */
+	$csv_data = smie_apply_filters( 'smie_csv_parsed', array(
 		'headers'   => $headers,
 		'rows'      => $rows,
 		'delimiter' => 'json',
@@ -538,7 +538,7 @@ function tsi_read_json_file( $filepath ) {
 	$rows    = $csv_data['rows'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
+	smie_set_import_data_transient( $token, $csv_data );
 
 	return array(
 		'headers'   => $headers,
@@ -559,11 +559,11 @@ function tsi_read_json_file( $filepath ) {
  * @param string $prefix The current key prefix.
  * @return void
  */
-function tsi_flatten_array( $array, &$result, $prefix ) {
+function smie_flatten_array( $array, &$result, $prefix ) {
 	foreach ( $array as $key => $value ) {
 		$full_key = '' !== $prefix ? $prefix . '.' . $key : $key;
 		if ( is_array( $value ) && ! wp_is_numeric_array( $value ) ) {
-			tsi_flatten_array( $value, $result, $full_key );
+			smie_flatten_array( $value, $result, $full_key );
 		} else {
 			$result[ $full_key ] = $value;
 		}
@@ -580,31 +580,24 @@ function tsi_flatten_array( $array, &$result, $prefix ) {
  * @param string $filepath Absolute path to the XML file.
  * @return array|string Parsed data array on success, error message on failure.
  */
-function tsi_read_xml_file( $filepath ) {
+function smie_read_xml_file( $filepath ) {
 	if ( ! function_exists( 'simplexml_load_string' ) ) {
-		return esc_html__( 'XML parsing requires the SimpleXML PHP extension.', 'the-simplest-importer' );
+		return esc_html__( 'XML parsing requires the SimpleXML PHP extension.', 'smartly-import-export' );
 	}
 
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- Reading local temp file for XML parsing.
 	$raw = file_get_contents( $filepath );
 	if ( false === $raw || '' === trim( $raw ) ) {
-		return esc_html__( 'Cannot read file or file is empty.', 'the-simplest-importer' );
+		return esc_html__( 'Cannot read file or file is empty.', 'smartly-import-export' );
 	}
 
-	/* Disable external entity loading for security */
 	$prev = libxml_use_internal_errors( true );
-	if ( PHP_VERSION_ID < 80000 ) {
-		$disent = libxml_disable_entity_loader( true ); // phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.libxml_disable_entity_loaderDeprecated -- Needed for security on PHP < 8.0.
-	}
 	$xml = simplexml_load_string( $raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NONET );
-	if ( PHP_VERSION_ID < 80000 ) {
-		libxml_disable_entity_loader( $disent ); // phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.libxml_disable_entity_loaderDeprecated
-	}
 	libxml_clear_errors();
 	libxml_use_internal_errors( $prev );
 
 	if ( false === $xml ) {
-		return esc_html__( 'Invalid XML format.', 'the-simplest-importer' );
+		return esc_html__( 'Invalid XML format.', 'smartly-import-export' );
 	}
 
 	/* Determine item elements */
@@ -651,7 +644,7 @@ function tsi_read_xml_file( $filepath ) {
 	}
 
 	if ( empty( $items ) ) {
-		return esc_html__( 'Could not find repeating item elements in XML.', 'the-simplest-importer' );
+		return esc_html__( 'Could not find repeating item elements in XML.', 'smartly-import-export' );
 	}
 
 	/* Collect all unique element names and convert to flat rows */
@@ -660,7 +653,7 @@ function tsi_read_xml_file( $filepath ) {
 
 	foreach ( $items as $item ) {
 		$flat = array();
-		tsi_xml_element_to_flat( $item, $flat, '' );
+		smie_xml_element_to_flat( $item, $flat, '' );
 		$flat_rows[] = $flat;
 		foreach ( array_keys( $flat ) as $k ) {
 			$all_keys[ $k ] = true;
@@ -668,7 +661,7 @@ function tsi_read_xml_file( $filepath ) {
 	}
 
 	if ( empty( $flat_rows ) ) {
-		return esc_html__( 'XML items contain no data.', 'the-simplest-importer' );
+		return esc_html__( 'XML items contain no data.', 'smartly-import-export' );
 	}
 
 	$headers = array_keys( $all_keys );
@@ -682,8 +675,8 @@ function tsi_read_xml_file( $filepath ) {
 		$rows[] = $row;
 	}
 
-	/** This filter is documented in tsi_read_csv_file */
-	$csv_data = apply_filters( 'tsi_csv_parsed', array(
+	/** This filter is documented in smie_read_csv_file */
+	$csv_data = smie_apply_filters( 'smie_csv_parsed', array(
 		'headers'   => $headers,
 		'rows'      => $rows,
 		'delimiter' => 'xml',
@@ -693,7 +686,7 @@ function tsi_read_xml_file( $filepath ) {
 	$rows    = $csv_data['rows'];
 
 	$token = wp_generate_password( 20, false );
-	set_transient( 'tsi_csv_data_' . $token, $csv_data, tsi_get_import_data_ttl() );
+	smie_set_import_data_transient( $token, $csv_data );
 
 	return array(
 		'headers'   => $headers,
@@ -714,7 +707,7 @@ function tsi_read_xml_file( $filepath ) {
  * @param string           $prefix  The current key prefix.
  * @return void
  */
-function tsi_xml_element_to_flat( $element, &$result, $prefix ) {
+function smie_xml_element_to_flat( $element, &$result, $prefix ) {
 	$children = $element->children();
 	if ( 0 === count( $children ) ) {
 		$key = '' !== $prefix ? $prefix : $element->getName();
@@ -725,7 +718,7 @@ function tsi_xml_element_to_flat( $element, &$result, $prefix ) {
 		$name     = $child->getName();
 		$full_key = '' !== $prefix ? $prefix . '.' . $name : $name;
 		if ( count( $child->children() ) > 0 ) {
-			tsi_xml_element_to_flat( $child, $result, $full_key );
+			smie_xml_element_to_flat( $child, $result, $full_key );
 		} else {
 			$result[ $full_key ] = trim( (string) $child );
 		}
@@ -739,18 +732,18 @@ function tsi_xml_element_to_flat( $element, &$result, $prefix ) {
  * @param string $extension File extension hint (csv, json, xml). Empty for auto-detect.
  * @return array|string Parsed data array on success, error message on failure.
  */
-function tsi_read_import_file( $filepath, $extension = '' ) {
+function smie_read_import_file( $filepath, $extension = '' ) {
 	if ( '' === $extension ) {
 		$extension = strtolower( pathinfo( $filepath, PATHINFO_EXTENSION ) );
 	}
 
 	switch ( $extension ) {
 		case 'json':
-			return tsi_read_json_file( $filepath );
+			return smie_read_json_file( $filepath );
 		case 'xml':
-			return tsi_read_xml_file( $filepath );
+			return smie_read_xml_file( $filepath );
 		default:
-			return tsi_read_csv_file( $filepath );
+			return smie_read_csv_file( $filepath );
 	}
 }
 
@@ -768,7 +761,7 @@ function tsi_read_import_file( $filepath, $extension = '' ) {
  * @param string $url The original URL.
  * @return string The CSV export URL, or original if not a Google Sheets URL.
  */
-function tsi_convert_google_sheets_url( $url ) {
+function smie_convert_google_sheets_url( $url ) {
 	/* Already a CSV export URL */
 	if ( preg_match( '/output=csv/', $url ) ) {
 		return $url;

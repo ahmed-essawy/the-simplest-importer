@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 env:
-  PLUGIN_SLUG: the-simplest-importer
+  PLUGIN_SLUG: smartly-import-export
 
 jobs:
   build:

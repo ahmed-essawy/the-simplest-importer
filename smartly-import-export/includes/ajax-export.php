@@ -2,7 +2,7 @@
 /**
  * Export AJAX handler and XLSX generation.
  *
- * @package TheSimplestImporter
+ * @package SmartlyImportExport
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,23 +12,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  * AJAX — Export posts as CSV
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_export', 'tsi_ajax_export' );
+add_action( 'wp_ajax_smie_export', 'smie_ajax_export' );
 
 /**
  * Export all posts of a given type as a base64-encoded CSV.
  *
  * @return void
  */
-function tsi_ajax_export() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_export() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 	if ( ! $post_type || ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
 	$export_mode   = isset( $_POST['export_mode'] ) ? sanitize_key( wp_unslash( $_POST['export_mode'] ) ) : 'all';
@@ -82,10 +82,10 @@ function tsi_ajax_export() {
 		$id_to   = isset( $_POST['id_to'] ) ? absint( $_POST['id_to'] ) : 0;
 
 		if ( $id_from || $id_to ) {
-			$query_args['tsi_id_from'] = $id_from;
-			$query_args['tsi_id_to']   = $id_to;
+			$query_args['smie_id_from'] = $id_from;
+			$query_args['smie_id_to']   = $id_to;
 
-			add_filter( 'posts_where', 'tsi_filter_export_id_range', 10, 2 );
+			add_filter( 'posts_where', 'smie_filter_export_id_range', 10, 2 );
 		}
 	} elseif ( 'dates' === $export_mode ) {
 		$date_from = isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '';
@@ -107,13 +107,13 @@ function tsi_ajax_export() {
 
 	$posts = get_posts( $query_args );
 
-	remove_filter( 'posts_where', 'tsi_filter_export_id_range', 10 );
+	remove_filter( 'posts_where', 'smie_filter_export_id_range', 10 );
 
 	if ( empty( $posts ) ) {
-		wp_send_json_error( esc_html__( 'No posts found for this post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'No posts found for this post type.', 'smartly-import-export' ) );
 	}
 
-	$fields    = tsi_get_post_type_fields( $post_type );
+	$fields    = smie_get_post_type_fields( $post_type );
 	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author', 'post_parent' );
 
 	/**
@@ -122,7 +122,7 @@ function tsi_ajax_export() {
 	 * @param array  $fields    Associative array of field_key => label.
 	 * @param string $post_type The post type being exported.
 	 */
-	$fields = apply_filters( 'tsi_export_columns', $fields, $post_type );
+	$fields = smie_apply_filters( 'smie_export_columns', $fields, $post_type );
 
 	/* Apply selective field filter if specified */
 	if ( ! empty( $selected_fields ) ) {
@@ -164,7 +164,7 @@ function tsi_ajax_export() {
 			$row[] = is_array( $val ) ? wp_json_encode( $val ) : ( isset( $val ) ? (string) $val : '' );
 		}
 		/** This filter is documented above. */
-		$row        = apply_filters( 'tsi_export_row', $row, $p, $header );
+		$row        = smie_apply_filters( 'smie_export_row', $row, $p, $header );
 		$all_rows[] = $row;
 	}
 
@@ -174,10 +174,10 @@ function tsi_ajax_export() {
 	 * @param string $post_type  The exported post type.
 	 * @param int    $post_count Number of posts exported.
 	 */
-	do_action( 'tsi_export_completed', $post_type, count( $posts ) );
+	smie_do_action( 'smie_export_completed', $post_type, count( $posts ) );
 
 	if ( 'xlsx' === $export_format && class_exists( 'ZipArchive' ) ) {
-		$xlsx_data = tsi_generate_xlsx( $header, $all_rows );
+		$xlsx_data = smie_generate_xlsx( $header, $all_rows );
 		if ( $xlsx_data ) {
 			wp_send_json_success( array(
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Base64 needed to transport binary through JSON.
@@ -224,12 +224,12 @@ function tsi_ajax_export() {
  * @param array $rows   Array of row arrays (each row is an indexed array of cell values).
  * @return string|false Binary XLSX data on success, false on failure.
  */
-function tsi_generate_xlsx( $header, $rows ) {
+function smie_generate_xlsx( $header, $rows ) {
 	if ( ! class_exists( 'ZipArchive' ) ) {
 		return false;
 	}
 
-	$tmp_file = wp_tempnam( 'tsi_xlsx_' );
+	$tmp_file = wp_tempnam( 'smie_xlsx_' );
 
 	$zip = new ZipArchive();
 	if ( true !== $zip->open( $tmp_file, ZipArchive::CREATE | ZipArchive::OVERWRITE ) ) {
@@ -299,7 +299,7 @@ function tsi_generate_xlsx( $header, $rows ) {
 	/* Header row */
 	$sheet_xml .= '<row r="1">';
 	foreach ( $header as $c => $cell ) {
-		$col_letter = tsi_xlsx_col_letter( $c );
+		$col_letter = smie_xlsx_col_letter( $c );
 		$si         = $get_string_index( $cell );
 		$sheet_xml .= '<c r="' . $col_letter . '1" t="s"><v>' . $si . '</v></c>';
 	}
@@ -310,7 +310,7 @@ function tsi_generate_xlsx( $header, $rows ) {
 		$row_num    = $r + 2;
 		$sheet_xml .= '<row r="' . $row_num . '">';
 		foreach ( $row as $c => $cell ) {
-			$col_letter = tsi_xlsx_col_letter( $c );
+			$col_letter = smie_xlsx_col_letter( $c );
 			$cell_str   = (string) $cell;
 
 			/* Numeric values stored as numbers for Excel calculation support */
@@ -351,7 +351,7 @@ function tsi_generate_xlsx( $header, $rows ) {
  * @param int $index Zero-based column index.
  * @return string Column letter(s).
  */
-function tsi_xlsx_col_letter( $index ) {
+function smie_xlsx_col_letter( $index ) {
 	$letter = '';
 	while ( $index >= 0 ) {
 		$letter = chr( 65 + ( $index % 26 ) ) . $letter;
@@ -367,11 +367,11 @@ function tsi_xlsx_col_letter( $index ) {
  * @param WP_Query $wp_query The query object.
  * @return string
  */
-function tsi_filter_export_id_range( $where, $wp_query ) {
+function smie_filter_export_id_range( $where, $wp_query ) {
 	global $wpdb;
 
-	$id_from = $wp_query->get( 'tsi_id_from' );
-	$id_to   = $wp_query->get( 'tsi_id_to' );
+	$id_from = $wp_query->get( 'smie_id_from' );
+	$id_to   = $wp_query->get( 'smie_id_to' );
 
 	if ( $id_from ) {
 		$where .= $wpdb->prepare( " AND {$wpdb->posts}.ID >= %d", $id_from );

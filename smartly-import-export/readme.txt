@@ -1,9 +1,9 @@
-=== The Simplest Importer ===
+=== Smartly Import Export ===
 Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 6.3
 Tested up to: 7.0
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,7 +12,7 @@ Import, export, and manage WordPress posts and custom post types via CSV, JSON, 
 
 == Description ==
 
-**The Simplest Importer** lets you import, export, and manage posts, pages, and any custom post type using CSV files — all with a clean, visual interface that makes the process intuitive and reliable.
+**Smartly Import Export** lets you import, export, and manage posts, pages, and any custom post type using CSV files — all with a clean, visual interface that makes the process intuitive and reliable.
 
 **Key Features:**
 
@@ -31,7 +31,7 @@ Import, export, and manage WordPress posts and custom post types via CSV, JSON, 
 * **Featured Image** — Set featured images from URLs during import.
 * **Select All / Deselect All** — Quickly toggle field mappings.
 * **Developer Friendly** — Action hooks and filters to extend import behaviour.
-* **Admin Only** — Requires `manage_options` capability. No front-end output, no tracking, no external calls.
+* **Admin Only** — Requires `manage_options` capability. No front-end output or tracking. Remote requests only occur for URLs you explicitly provide, such as importing a file from a URL or downloading external media during import.
 * **Scheduled Imports** — Set up recurring WP-Cron imports from a URL (hourly, twice daily, daily, weekly).
 * **Import History & Rollback** — View past imports, trash inserted posts, and restore updated posts from saved rollback snapshots.
 * **Duplicate Detection** — Skip rows when a matching post title, slug, or meta key already exists.
@@ -67,9 +67,9 @@ Works with all registered post types that have a UI — Posts, Pages, WooCommerc
 
 == Installation ==
 
-1. Upload the `the-simplest-importer` folder to `/wp-content/plugins/`.
+1. Upload the `smartly-import-export` folder to `/wp-content/plugins/`.
 2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Go to **Tools → Simplest Importer** to start importing or exporting.
+3. Go to **Tools → Smartly Import Export** to start importing or exporting.
 4. The plugin also appears in **Tools → Import** alongside other WordPress importers.
 
 == Frequently Asked Questions ==
@@ -98,13 +98,14 @@ Yes, it works with any custom post type that has `show_ui` enabled, including Wo
 
 The limit depends on your server settings (`upload_max_filesize`, `post_max_size`, `memory_limit`). The batch import system prevents timeouts even for large files.
 
+
 = Does this plugin send data to external servers? =
 
-No. All processing happens on your server. External requests only occur if you fetch a CSV from a URL you provide, or import a featured image URL.
+No. All processing happens on your server. Remote requests only occur when you explicitly configure them, such as fetching an import file from a URL, downloading external media during import, or sending scheduled import/export email notifications.
 
 = How does batch import work? =
 
-The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`). A progress bar shows real-time status, and your browser stays responsive throughout.
+The plugin processes 50 rows at a time (filterable via `smie_import_batch_size`). A progress bar shows real-time status, and your browser stays responsive throughout.
 
 == Screenshots ==
 
@@ -116,6 +117,12 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 6. Step 6 — Color-coded result summary with detailed log.
 
 == Changelog ==
+
+= 1.4.2 =
+* Changed: Renamed the plugin from The Simplest Importer to Smartly Import Export and updated the slug, text domain, and hook prefixes.
+* Changed: Moved the single-post export JavaScript out of PHP markup into a dedicated admin asset.
+* Changed: Replaced deprecated XML entity-loader handling with modern secure XML parsing.
+* Changed: Added upgrade-safe compatibility for legacy `tsi_*` options, transients, cron hooks, and extension hooks.
 
 = 1.4.1 =
 * Fixed: Import history now accumulates every batch instead of saving only the final batch.
@@ -159,7 +166,7 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 * Added: Email notifications — receive reports when scheduled imports complete or fail.
 * Added: Scheduled exports — recurring WP-Cron exports saved to uploads with optional email attachment.
 * Added: Single post export — meta box on post edit screens for exporting individual posts as CSV.
-* Added: 8 new developer hooks: `tsi_csv_parsed`, `tsi_export_columns`, `tsi_export_row`, `tsi_export_completed`, `tsi_before_import_row`, `tsi_import_row_data`, `tsi_import_completed`, `tsi_import_row_filter`.
+* Added: 8 new developer hooks: `smie_csv_parsed`, `smie_export_columns`, `smie_export_row`, `smie_export_completed`, `smie_before_import_row`, `smie_import_row_data`, `smie_import_completed`, `smie_import_row_filter`.
 * Fixed: "Proceed with Import" button after CSV validation was not functional.
 * Fixed: Scheduled imports failed on semicolon/tab/pipe-delimited CSV files.
 * Fixed: Misleading "WordPress Users" reference in admin UI replaced with accurate description.
@@ -193,9 +200,12 @@ The plugin processes 50 rows at a time (filterable via `tsi_import_batch_size`).
 * Featured image import from URL.
 * Taxonomy term support.
 * Responsive admin interface.
-* Developer hooks: `tsi_post_types`, `tsi_post_type_fields`, `tsi_import_batch_size`, `tsi_after_import_row`.
+* Developer hooks: `smie_post_types`, `smie_post_type_fields`, `smie_import_batch_size`, `smie_after_import_row`.
 
 == Upgrade Notice ==
+
+= 1.4.2 =
+Renames the plugin to Smartly Import Export, removes the remaining inline admin script, modernizes XML parsing, and preserves compatibility with existing `tsi_*` data and hooks.
 
 = 1.4.1 =
 Improves rollback safety, fixes queued imports and validation flow, and tightens schedule and uninstall handling.

@@ -1,9 +1,9 @@
 {
-	"name": "ahmed-essawy/the-simplest-importer",
+	"name": "ahmed-essawy/smartly-import-export",
 	"description": "A simple CSV importer and exporter for WordPress.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
-	"homepage": "https://github.com/ahmed-essawy/the-simplest-importer",
+	"homepage": "https://github.com/ahmed-essawy/smartly-import-export",
 	"authors": [
 		{
 			"name": "Ahmed Essawy",

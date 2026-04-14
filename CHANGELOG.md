@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.2] - Unreleased
+
+### Changed
+- Renamed the plugin to Smartly Import Export with the `smartly-import-export` slug, `smie_` hook namespace, and `SMIE_` constants.
+- Moved the single-post export JavaScript out of PHP markup into an enqueued admin asset.
+- Replaced deprecated XML entity-loader handling with `LIBXML_NONET` parsing and internal error handling only.
+- Added upgrade-safe compatibility for legacy `tsi_*` options, transients, cron hooks, and extension hooks.
+
 ## [1.4.0] - Unreleased
 
 ### Added
@@ -43,9 +51,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Google Sheets import — automatically converts Google Sheets URLs to CSV download links (both edit and published formats).
 - Conditional row filtering — define rules to skip rows during import based on column values (equals, not equals, contains, not contains, greater than, less than, empty, not empty).
 - Email notifications — receive email reports when scheduled imports complete or fail.
-- Scheduled exports — recurring WP-Cron exports saved to `wp-content/uploads/tsi-exports/` with optional email attachment. Auto-cleanup after 7 days.
+- Scheduled exports — recurring WP-Cron exports saved to `wp-content/uploads/smie-exports/` with optional email attachment. Auto-cleanup after 7 days.
 - Single post export — meta box on post edit screens for exporting individual posts as CSV.
-- New developer hooks: `tsi_csv_parsed`, `tsi_export_columns`, `tsi_export_row`, `tsi_export_completed`, `tsi_before_import_row`, `tsi_import_row_data`, `tsi_import_completed`, `tsi_import_row_filter`.
+- New developer hooks: `smie_csv_parsed`, `smie_export_columns`, `smie_export_row`, `smie_export_completed`, `smie_before_import_row`, `smie_import_row_data`, `smie_import_completed`, `smie_import_row_filter`.
 
 ### Fixed
 - "Proceed with Import" button after CSV validation was non-functional (missing JS handler).
@@ -70,7 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Import rollback — move all posts from a specific import to trash.
 - Sticky post type — remembers last selected post type via localStorage.
 - Export row count — shows post count in the export button.
-- New developer hooks: `tsi_import_batch_size` filter, `tsi_after_import_row` action.
+- New developer hooks: `smie_import_batch_size` filter, `smie_after_import_row` action.
 
 ## [1.0.0] - 2026-03-29
 

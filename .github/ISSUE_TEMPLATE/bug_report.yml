@@ -55,7 +55,7 @@ body:
       label: Steps to Reproduce
       description: How can we reproduce this?
       value: |
-        1. Go to Tools → Simplest Importer
+        1. Go to Tools → Smartly Import Export
         2. Select '...'
         3. Click '...'
         4. See error

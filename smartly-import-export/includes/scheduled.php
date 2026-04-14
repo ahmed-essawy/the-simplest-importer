@@ -2,7 +2,7 @@
 /**
  * Scheduled imports and exports via WP-Cron.
  *
- * @package TheSimplestImporter
+ * @package SmartlyImportExport
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,11 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Save a new scheduled import.
  */
-function tsi_ajax_add_schedule() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_add_schedule() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$name      = isset( $_POST['schedule_name'] ) ? sanitize_text_field( wp_unslash( $_POST['schedule_name'] ) ) : '';
@@ -30,19 +30,19 @@ function tsi_ajax_add_schedule() {
 	$email     = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
 	if ( ! $name || ! $url || ! $post_type ) {
-		wp_send_json_error( esc_html__( 'Name, URL, and post type are required.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Name, URL, and post type are required.', 'smartly-import-export' ) );
 	}
 
 	if ( ! wp_http_validate_url( $url ) ) {
-		wp_send_json_error( esc_html__( 'Please enter a valid URL.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Please enter a valid URL.', 'smartly-import-export' ) );
 	}
 
 	if ( ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
 	if ( $email && ! is_email( $email ) ) {
-		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'smartly-import-export' ) );
 	}
 
 	$allowed_freq = array( 'hourly', 'twicedaily', 'daily', 'weekly' );
@@ -50,7 +50,7 @@ function tsi_ajax_add_schedule() {
 		$frequency = 'daily';
 	}
 
-	$schedules = tsi_get_scheduled_imports();
+	$schedules = smie_get_scheduled_imports();
 	$id        = wp_generate_password( 8, false );
 
 	$schedules[ $id ] = array(
@@ -66,20 +66,20 @@ function tsi_ajax_add_schedule() {
 		'status'    => 'active',
 	);
 
-	update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+	update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
 
 	/* Schedule the cron event */
-	if ( ! wp_next_scheduled( 'tsi_scheduled_import', array( $id ) ) ) {
-		wp_schedule_event( time(), $frequency, 'tsi_scheduled_import', array( $id ) );
+	if ( ! wp_next_scheduled( 'smie_scheduled_import', array( $id ) ) ) {
+		wp_schedule_event( time(), $frequency, 'smie_scheduled_import', array( $id ) );
 	}
 
 	wp_send_json_success( array(
 		'schedules' => $schedules,
 		/* translators: %s: schedule name */
-		'message'   => sprintf( esc_html__( 'Schedule "%s" created.', 'the-simplest-importer' ), $name ),
+		'message'   => sprintf( esc_html__( 'Schedule "%s" created.', 'smartly-import-export' ), $name ),
 	) );
 }
-add_action( 'wp_ajax_tsi_add_schedule', 'tsi_ajax_add_schedule' );
+add_action( 'wp_ajax_smie_add_schedule', 'smie_ajax_add_schedule' );
 
 /* ------------------------------------------------------------------
  * AJAX — Delete scheduled import
@@ -88,36 +88,41 @@ add_action( 'wp_ajax_tsi_add_schedule', 'tsi_ajax_add_schedule' );
 /**
  * Delete a scheduled import.
  */
-function tsi_ajax_delete_schedule() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_delete_schedule() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$id = isset( $_POST['schedule_id'] ) ? sanitize_key( wp_unslash( $_POST['schedule_id'] ) ) : '';
 	if ( ! $id ) {
-		wp_send_json_error( esc_html__( 'Missing schedule ID.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Missing schedule ID.', 'smartly-import-export' ) );
 	}
 
-	$schedules = tsi_get_scheduled_imports();
+	$schedules = smie_get_scheduled_imports();
 	if ( isset( $schedules[ $id ] ) ) {
 		unset( $schedules[ $id ] );
-		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+		update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
 
 		/* Remove the cron event */
-		$timestamp = wp_next_scheduled( 'tsi_scheduled_import', array( $id ) );
+		$timestamp = wp_next_scheduled( 'smie_scheduled_import', array( $id ) );
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'tsi_scheduled_import', array( $id ) );
+			wp_unschedule_event( $timestamp, 'smie_scheduled_import', array( $id ) );
+		}
+
+		$legacy_timestamp = wp_next_scheduled( SMIE_LEGACY_IMPORT_CRON_HOOK, array( $id ) );
+		if ( $legacy_timestamp ) {
+			wp_unschedule_event( $legacy_timestamp, SMIE_LEGACY_IMPORT_CRON_HOOK, array( $id ) );
 		}
 	}
 
 	wp_send_json_success( array(
 		'schedules' => $schedules,
-		'message'   => esc_html__( 'Schedule deleted.', 'the-simplest-importer' ),
+		'message'   => esc_html__( 'Schedule deleted.', 'smartly-import-export' ),
 	) );
 }
-add_action( 'wp_ajax_tsi_delete_schedule', 'tsi_ajax_delete_schedule' );
+add_action( 'wp_ajax_smie_delete_schedule', 'smie_ajax_delete_schedule' );
 
 /* ------------------------------------------------------------------
  * WP-Cron — Execute scheduled import
@@ -129,14 +134,14 @@ add_action( 'wp_ajax_tsi_delete_schedule', 'tsi_ajax_delete_schedule' );
  * @param array  $schedule The schedule config array.
  * @param string $body     The email body text.
  */
-function tsi_send_schedule_email( $schedule, $body ) {
+function smie_send_schedule_email( $schedule, $body ) {
 	$email = ! empty( $schedule['email'] ) ? $schedule['email'] : '';
 	if ( ! $email || ! is_email( $email ) ) {
 		return;
 	}
 
 	/* translators: %s: schedule name */
-	$subject = sprintf( esc_html__( '[%s] Scheduled Import Report', 'the-simplest-importer' ), $schedule['name'] );
+	$subject = sprintf( esc_html__( '[%s] Scheduled Import Report', 'smartly-import-export' ), $schedule['name'] );
 	wp_mail( $email, $subject, $body );
 }
 
@@ -145,8 +150,8 @@ function tsi_send_schedule_email( $schedule, $body ) {
  *
  * @param string $schedule_id The schedule ID.
  */
-function tsi_run_scheduled_import( $schedule_id ) {
-	$schedules = tsi_get_scheduled_imports();
+function smie_run_scheduled_import( $schedule_id ) {
+	$schedules = smie_get_scheduled_imports();
 	if ( ! isset( $schedules[ $schedule_id ] ) ) {
 		return;
 	}
@@ -156,23 +161,23 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$url       = $schedule['url'];
 
 	/* Auto-convert Google Sheets URL */
-	$url = tsi_convert_google_sheets_url( $url );
+	$url = smie_convert_google_sheets_url( $url );
 
 	/* Fetch CSV from URL */
 	$response = wp_remote_get( $url, array( 'timeout' => 60 ) );
 	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'error';
-		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to fetch CSV from URL.', 'the-simplest-importer' );
-		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
-		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to fetch CSV from URL.', 'the-simplest-importer' ) );
+		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to fetch CSV from URL.', 'smartly-import-export' );
+		update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
+		smie_send_schedule_email( $schedule, esc_html__( 'Failed to fetch CSV from URL.', 'smartly-import-export' ) );
 		return;
 	}
 
 	$body = wp_remote_retrieve_body( $response );
 
 	/* Write to temp file so we can reuse the file readers with format auto-detection. */
-	$tmp = wp_tempnam( 'tsi_sched_' );
+	$tmp = wp_tempnam( 'smie_sched_' );
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing to temp file for import parsing.
 	file_put_contents( $tmp, $body );
 
@@ -186,15 +191,15 @@ function tsi_run_scheduled_import( $schedule_id ) {
 		$format = 'xml';
 	}
 
-	$parsed = tsi_read_import_file( $tmp, $format );
+	$parsed = smie_read_import_file( $tmp, $format );
 	wp_delete_file( $tmp );
 
 	if ( is_string( $parsed ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'error';
-		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to parse CSV data.', 'the-simplest-importer' );
-		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
-		tsi_send_schedule_email( $schedule, esc_html__( 'Failed to parse CSV data.', 'the-simplest-importer' ) );
+		$schedules[ $schedule_id ]['last_error']  = __( 'Failed to parse CSV data.', 'smartly-import-export' );
+		update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
+		smie_send_schedule_email( $schedule, esc_html__( 'Failed to parse CSV data.', 'smartly-import-export' ) );
 		return;
 	}
 
@@ -202,13 +207,13 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$csv_token = $parsed['token'];
 
 	/* Retrieve rows from transient */
-	$csv_data = get_transient( 'tsi_csv_data_' . $csv_token );
+	$csv_data = smie_get_import_data_transient( $csv_token );
 	if ( ! $csv_data || empty( $csv_data['rows'] ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'empty';
-		$schedules[ $schedule_id ]['last_error']  = __( 'CSV file was empty or contained no data rows.', 'the-simplest-importer' );
-		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
-		tsi_send_schedule_email( $schedule, esc_html__( 'CSV file was empty or contained no data rows.', 'the-simplest-importer' ) );
+		$schedules[ $schedule_id ]['last_error']  = __( 'CSV file was empty or contained no data rows.', 'smartly-import-export' );
+		update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
+		smie_send_schedule_email( $schedule, esc_html__( 'CSV file was empty or contained no data rows.', 'smartly-import-export' ) );
 		return;
 	}
 
@@ -217,7 +222,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	/* Build mapping from profile or auto-match */
 	$mapping = array();
 	if ( ! empty( $schedule['profile'] ) ) {
-		$profiles = tsi_get_mapping_profiles();
+		$profiles = smie_get_mapping_profiles();
 		if ( isset( $profiles[ $schedule['profile'] ] ) ) {
 			$mapping = $profiles[ $schedule['profile'] ]['mapping'];
 		}
@@ -225,7 +230,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 
 	if ( empty( $mapping ) ) {
 		/* Auto-match by header name */
-		$fields = tsi_get_post_type_fields( $post_type );
+		$fields = smie_get_post_type_fields( $post_type );
 		foreach ( $headers as $col_index => $header ) {
 			$header_clean = sanitize_title( trim( $header ) );
 			foreach ( $fields as $field_key => $field_label ) {
@@ -243,13 +248,13 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	if ( empty( $mapping ) ) {
 		$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$schedules[ $schedule_id ]['last_status'] = 'no_mapping';
-		$schedules[ $schedule_id ]['last_error']  = __( 'No column mapping could be determined.', 'the-simplest-importer' );
-		update_option( TSI_SCHEDULES_OPTION, $schedules, false );
-		tsi_send_schedule_email( $schedule, esc_html__( 'No column mapping could be determined.', 'the-simplest-importer' ) );
+		$schedules[ $schedule_id ]['last_error']  = __( 'No column mapping could be determined.', 'smartly-import-export' );
+		update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
+		smie_send_schedule_email( $schedule, esc_html__( 'No column mapping could be determined.', 'smartly-import-export' ) );
 		return;
 	}
 
-	$clean_map = tsi_sanitize_mapping( $mapping, count( $headers ) );
+	$clean_map = smie_sanitize_mapping( $mapping, count( $headers ) );
 
 	$inserted       = 0;
 	$updated        = 0;
@@ -259,7 +264,7 @@ function tsi_run_scheduled_import( $schedule_id ) {
 	$history_actions = array();
 
 	foreach ( $rows as $i => $row ) {
-		$result = tsi_import_single_row( $row, $i + 2, $post_type, $clean_map, false, '', '', array(), $headers, 'insert-update' );
+		$result = smie_import_single_row( $row, $i + 2, $post_type, $clean_map, false, '', '', array(), $headers, 'insert-update' );
 		if ( ! empty( $result['post_id'] ) ) {
 			$post_ids[] = $result['post_id'];
 		}
@@ -279,35 +284,36 @@ function tsi_run_scheduled_import( $schedule_id ) {
 
 	/* Record in history */
 	$history_id = 'sched-' . $schedule_id . '-' . time();
-	tsi_record_import_history( $history_id, $post_type, 'scheduled', $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, true );
+	smie_record_import_history( $history_id, $post_type, 'scheduled', $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, true );
 
 	/* Clean up CSV transient */
-	delete_transient( 'tsi_csv_data_' . $csv_token );
+	smie_delete_import_data_transient( $csv_token );
 
 	/* Update schedule status */
 	$schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 	$schedules[ $schedule_id ]['last_status'] = 'success';
 	$schedules[ $schedule_id ]['last_count']  = $inserted + $updated;
 	$schedules[ $schedule_id ]['last_error']  = '';
-	update_option( TSI_SCHEDULES_OPTION, $schedules, false );
+	update_option( SMIE_SCHEDULES_OPTION, $schedules, false );
 
 	/* Send email notification if configured */
 	$lines = array();
 	/* translators: %s: schedule name */
-	$lines[] = sprintf( esc_html__( 'Schedule: %s', 'the-simplest-importer' ), $schedule['name'] );
+	$lines[] = sprintf( esc_html__( 'Schedule: %s', 'smartly-import-export' ), $schedule['name'] );
 	/* translators: %s: post type slug */
-	$lines[] = sprintf( esc_html__( 'Post type: %s', 'the-simplest-importer' ), $post_type );
+	$lines[] = sprintf( esc_html__( 'Post type: %s', 'smartly-import-export' ), $post_type );
 	/* translators: %d: number of inserted posts */
-	$lines[] = sprintf( esc_html__( 'Inserted: %d', 'the-simplest-importer' ), $inserted );
+	$lines[] = sprintf( esc_html__( 'Inserted: %d', 'smartly-import-export' ), $inserted );
 	/* translators: %d: number of updated posts */
-	$lines[] = sprintf( esc_html__( 'Updated: %d', 'the-simplest-importer' ), $updated );
+	$lines[] = sprintf( esc_html__( 'Updated: %d', 'smartly-import-export' ), $updated );
 	/* translators: %d: number of errors */
-	$lines[] = sprintf( esc_html__( 'Errors: %d', 'the-simplest-importer' ), $errors );
+	$lines[] = sprintf( esc_html__( 'Errors: %d', 'smartly-import-export' ), $errors );
 	/* translators: %s: date and time */
-	$lines[] = sprintf( esc_html__( 'Completed at: %s', 'the-simplest-importer' ), current_time( 'mysql' ) );
-	tsi_send_schedule_email( $schedule, implode( "\n", $lines ) );
+	$lines[] = sprintf( esc_html__( 'Completed at: %s', 'smartly-import-export' ), current_time( 'mysql' ) );
+	smie_send_schedule_email( $schedule, implode( "\n", $lines ) );
 }
-add_action( 'tsi_scheduled_import', 'tsi_run_scheduled_import' );
+add_action( SMIE_IMPORT_CRON_HOOK, 'smie_run_scheduled_import' );
+add_action( SMIE_LEGACY_IMPORT_CRON_HOOK, 'smie_run_scheduled_import' );
 
 /* ------------------------------------------------------------------
  * WP-Cron — Register weekly schedule interval
@@ -319,16 +325,16 @@ add_action( 'tsi_scheduled_import', 'tsi_run_scheduled_import' );
  * @param array $schedules Existing cron schedules.
  * @return array
  */
-function tsi_add_cron_interval( $schedules ) {
+function smie_add_cron_interval( $schedules ) {
 	if ( ! isset( $schedules['weekly'] ) ) {
 		$schedules['weekly'] = array(
 			'interval' => WEEK_IN_SECONDS,
-			'display'  => esc_html__( 'Once Weekly', 'the-simplest-importer' ),
+			'display'  => esc_html__( 'Once Weekly', 'smartly-import-export' ),
 		);
 	}
 	return $schedules;
 }
-add_filter( 'cron_schedules', 'tsi_add_cron_interval' );
+add_filter( 'cron_schedules', 'smie_add_cron_interval' );
 
 /* ------------------------------------------------------------------
  * Helper — Scheduled exports CRUD
@@ -339,8 +345,10 @@ add_filter( 'cron_schedules', 'tsi_add_cron_interval' );
  *
  * @return array
  */
-function tsi_get_export_schedules() {
-	return get_option( TSI_EXPORT_SCHEDULES_OPTION, array() );
+function smie_get_export_schedules() {
+	$export_schedules = smie_get_option_with_legacy( SMIE_EXPORT_SCHEDULES_OPTION, SMIE_LEGACY_EXPORT_SCHEDULES_OPTION, array() );
+
+	return is_array( $export_schedules ) ? $export_schedules : array();
 }
 
 /* ------------------------------------------------------------------
@@ -350,11 +358,11 @@ function tsi_get_export_schedules() {
 /**
  * Save a new scheduled export.
  */
-function tsi_ajax_add_export_schedule() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_add_export_schedule() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$name      = isset( $_POST['schedule_name'] ) ? sanitize_text_field( wp_unslash( $_POST['schedule_name'] ) ) : '';
@@ -363,15 +371,15 @@ function tsi_ajax_add_export_schedule() {
 	$email     = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
 	if ( ! $name || ! $post_type ) {
-		wp_send_json_error( esc_html__( 'Name and post type are required.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Name and post type are required.', 'smartly-import-export' ) );
 	}
 
 	if ( ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
 	if ( $email && ! is_email( $email ) ) {
-		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Please enter a valid notification email.', 'smartly-import-export' ) );
 	}
 
 	$allowed_freq = array( 'hourly', 'twicedaily', 'daily', 'weekly' );
@@ -379,7 +387,7 @@ function tsi_ajax_add_export_schedule() {
 		$frequency = 'weekly';
 	}
 
-	$export_schedules = tsi_get_export_schedules();
+	$export_schedules = smie_get_export_schedules();
 	$id               = wp_generate_password( 8, false );
 
 	$export_schedules[ $id ] = array(
@@ -393,20 +401,20 @@ function tsi_ajax_add_export_schedule() {
 		'status'    => 'active',
 	);
 
-	update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+	update_option( SMIE_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
 
 	/* Schedule the cron event */
-	if ( ! wp_next_scheduled( 'tsi_scheduled_export', array( $id ) ) ) {
-		wp_schedule_event( time(), $frequency, 'tsi_scheduled_export', array( $id ) );
+	if ( ! wp_next_scheduled( 'smie_scheduled_export', array( $id ) ) ) {
+		wp_schedule_event( time(), $frequency, 'smie_scheduled_export', array( $id ) );
 	}
 
 	wp_send_json_success( array(
 		'export_schedules' => $export_schedules,
 		/* translators: %s: schedule name */
-		'message'          => sprintf( esc_html__( 'Export schedule "%s" created.', 'the-simplest-importer' ), $name ),
+		'message'          => sprintf( esc_html__( 'Export schedule "%s" created.', 'smartly-import-export' ), $name ),
 	) );
 }
-add_action( 'wp_ajax_tsi_add_export_schedule', 'tsi_ajax_add_export_schedule' );
+add_action( 'wp_ajax_smie_add_export_schedule', 'smie_ajax_add_export_schedule' );
 
 /* ------------------------------------------------------------------
  * AJAX — Delete scheduled export
@@ -415,36 +423,41 @@ add_action( 'wp_ajax_tsi_add_export_schedule', 'tsi_ajax_add_export_schedule' );
 /**
  * Delete a scheduled export.
  */
-function tsi_ajax_delete_export_schedule() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_delete_export_schedule() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$id = isset( $_POST['schedule_id'] ) ? sanitize_key( wp_unslash( $_POST['schedule_id'] ) ) : '';
 	if ( ! $id ) {
-		wp_send_json_error( esc_html__( 'Missing schedule ID.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Missing schedule ID.', 'smartly-import-export' ) );
 	}
 
-	$export_schedules = tsi_get_export_schedules();
+	$export_schedules = smie_get_export_schedules();
 	if ( isset( $export_schedules[ $id ] ) ) {
 		unset( $export_schedules[ $id ] );
-		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+		update_option( SMIE_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
 
 		/* Remove the cron event */
-		$timestamp = wp_next_scheduled( 'tsi_scheduled_export', array( $id ) );
+		$timestamp = wp_next_scheduled( 'smie_scheduled_export', array( $id ) );
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'tsi_scheduled_export', array( $id ) );
+			wp_unschedule_event( $timestamp, 'smie_scheduled_export', array( $id ) );
+		}
+
+		$legacy_timestamp = wp_next_scheduled( SMIE_LEGACY_EXPORT_CRON_HOOK, array( $id ) );
+		if ( $legacy_timestamp ) {
+			wp_unschedule_event( $legacy_timestamp, SMIE_LEGACY_EXPORT_CRON_HOOK, array( $id ) );
 		}
 	}
 
 	wp_send_json_success( array(
 		'export_schedules' => $export_schedules,
-		'message'          => esc_html__( 'Export schedule deleted.', 'the-simplest-importer' ),
+		'message'          => esc_html__( 'Export schedule deleted.', 'smartly-import-export' ),
 	) );
 }
-add_action( 'wp_ajax_tsi_delete_export_schedule', 'tsi_ajax_delete_export_schedule' );
+add_action( 'wp_ajax_smie_delete_export_schedule', 'smie_ajax_delete_export_schedule' );
 
 /* ------------------------------------------------------------------
  * WP-Cron — Execute scheduled export
@@ -455,8 +468,8 @@ add_action( 'wp_ajax_tsi_delete_export_schedule', 'tsi_ajax_delete_export_schedu
  *
  * @param string $schedule_id The export schedule ID.
  */
-function tsi_run_scheduled_export( $schedule_id ) {
-	$export_schedules = tsi_get_export_schedules();
+function smie_run_scheduled_export( $schedule_id ) {
+	$export_schedules = smie_get_export_schedules();
 	if ( ! isset( $export_schedules[ $schedule_id ] ) ) {
 		return;
 	}
@@ -467,7 +480,7 @@ function tsi_run_scheduled_export( $schedule_id ) {
 	if ( ! post_type_exists( $post_type ) ) {
 		$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$export_schedules[ $schedule_id ]['last_status'] = 'error';
-		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+		update_option( SMIE_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
 		return;
 	}
 
@@ -482,11 +495,11 @@ function tsi_run_scheduled_export( $schedule_id ) {
 	if ( empty( $posts ) ) {
 		$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 		$export_schedules[ $schedule_id ]['last_status'] = 'empty';
-		update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+		update_option( SMIE_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
 		return;
 	}
 
-	$fields    = tsi_get_post_type_fields( $post_type );
+	$fields    = smie_get_post_type_fields( $post_type );
 	$core_keys = array( 'ID', 'post_title', 'post_content', 'post_excerpt', 'post_status', 'post_date', 'post_name', 'post_author', 'post_parent' );
 
 	$meta_fields = array();
@@ -536,7 +549,7 @@ function tsi_run_scheduled_export( $schedule_id ) {
 
 	/* Ensure export directory exists */
 	$upload_dir  = wp_upload_dir();
-	$export_dir  = $upload_dir['basedir'] . '/tsi-exports';
+	$export_dir  = $upload_dir['basedir'] . '/smie-exports';
 
 	if ( ! file_exists( $export_dir ) ) {
 		wp_mkdir_p( $export_dir );
@@ -555,43 +568,44 @@ function tsi_run_scheduled_export( $schedule_id ) {
 	file_put_contents( $filepath, $csv_string );
 
 	/* Auto-clean exports older than 7 days */
-	tsi_cleanup_old_exports( $export_dir );
+	smie_cleanup_old_exports( $export_dir );
 
 	/* Update schedule status */
 	$export_schedules[ $schedule_id ]['last_run']    = current_time( 'mysql' );
 	$export_schedules[ $schedule_id ]['last_status'] = 'success';
 	/* translators: %d: number of posts exported */
 	$export_schedules[ $schedule_id ]['last_count']  = count( $posts );
-	update_option( TSI_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
+	update_option( SMIE_EXPORT_SCHEDULES_OPTION, $export_schedules, false );
 
 	/* Send email notification if configured */
 	$email = ! empty( $schedule['email'] ) ? $schedule['email'] : '';
 	if ( $email && is_email( $email ) ) {
 		/* translators: %s: schedule name */
-		$subject = sprintf( esc_html__( '[%s] Scheduled Export Complete', 'the-simplest-importer' ), $schedule['name'] );
+		$subject = sprintf( esc_html__( '[%s] Scheduled Export Complete', 'smartly-import-export' ), $schedule['name'] );
 
 		$lines = array();
 		/* translators: %s: schedule name */
-		$lines[] = sprintf( esc_html__( 'Schedule: %s', 'the-simplest-importer' ), $schedule['name'] );
+		$lines[] = sprintf( esc_html__( 'Schedule: %s', 'smartly-import-export' ), $schedule['name'] );
 		/* translators: %s: post type slug */
-		$lines[] = sprintf( esc_html__( 'Post type: %s', 'the-simplest-importer' ), $post_type );
+		$lines[] = sprintf( esc_html__( 'Post type: %s', 'smartly-import-export' ), $post_type );
 		/* translators: %d: number of posts exported */
-		$lines[] = sprintf( esc_html__( 'Posts exported: %d', 'the-simplest-importer' ), count( $posts ) );
+		$lines[] = sprintf( esc_html__( 'Posts exported: %d', 'smartly-import-export' ), count( $posts ) );
 		/* translators: %s: date and time */
-		$lines[] = sprintf( esc_html__( 'Completed at: %s', 'the-simplest-importer' ), current_time( 'mysql' ) );
-		$lines[] = esc_html__( 'The CSV file is attached to this email.', 'the-simplest-importer' );
+		$lines[] = sprintf( esc_html__( 'Completed at: %s', 'smartly-import-export' ), current_time( 'mysql' ) );
+		$lines[] = esc_html__( 'The CSV file is attached to this email.', 'smartly-import-export' );
 
 		wp_mail( $email, $subject, implode( "\n", $lines ), '', array( $filepath ) );
 	}
 }
-add_action( 'tsi_scheduled_export', 'tsi_run_scheduled_export' );
+add_action( SMIE_EXPORT_CRON_HOOK, 'smie_run_scheduled_export' );
+add_action( SMIE_LEGACY_EXPORT_CRON_HOOK, 'smie_run_scheduled_export' );
 
 /**
  * Remove exported CSV files older than 7 days.
  *
  * @param string $directory The export directory path.
  */
-function tsi_cleanup_old_exports( $directory ) {
+function smie_cleanup_old_exports( $directory ) {
 	$files = glob( $directory . '/*.csv' );
 	if ( ! is_array( $files ) ) {
 		return;

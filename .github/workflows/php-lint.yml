@@ -28,4 +28,4 @@ jobs:
           tools: php-parallel-lint/php-parallel-lint
 
       - name: Lint all PHP files
-        run: parallel-lint the-simplest-importer
+        run: parallel-lint smartly-import-export

@@ -2,7 +2,7 @@
 /**
  * Import AJAX handlers and import helper functions.
  *
- * @package TheSimplestImporter
+ * @package SmartlyImportExport
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,26 +12,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  * AJAX — Export blank template CSV
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_template', 'tsi_ajax_template' );
+add_action( 'wp_ajax_smie_template', 'smie_ajax_template' );
 
 /**
  * Generate a blank CSV template for a given post type.
  *
  * @return void
  */
-function tsi_ajax_template() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_template() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 	if ( ! $post_type || ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
-	$fields = tsi_get_post_type_fields( $post_type );
+	$fields = smie_get_post_type_fields( $post_type );
 
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Using php://temp for in-memory CSV generation.
 	$output = fopen( 'php://temp', 'r+' );
@@ -54,7 +54,7 @@ function tsi_ajax_template() {
  * AJAX — Batch import
  * ------------------------------------------------------------------ */
 
-add_action( 'wp_ajax_tsi_import_batch', 'tsi_ajax_import_batch' );
+add_action( 'wp_ajax_smie_import_batch', 'smie_ajax_import_batch' );
 
 /**
  * Process a batch of CSV rows for import.
@@ -64,11 +64,11 @@ add_action( 'wp_ajax_tsi_import_batch', 'tsi_ajax_import_batch' );
  *
  * @return void
  */
-function tsi_ajax_import_batch() {
-	check_ajax_referer( 'tsi_nonce', 'nonce' );
+function smie_ajax_import_batch() {
+	check_ajax_referer( 'smie_nonce', 'nonce' );
 
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( esc_html__( 'Unauthorized.', 'the-simplest-importer' ), 403 );
+		wp_send_json_error( esc_html__( 'Unauthorized.', 'smartly-import-export' ), 403 );
 	}
 
 	$token      = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
@@ -86,18 +86,18 @@ function tsi_ajax_import_batch() {
 	$retry_rows_raw = isset( $_POST['retry_rows'] ) ? wp_unslash( $_POST['retry_rows'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
 
 	if ( ! $token || ! $post_type ) {
-		wp_send_json_error( esc_html__( 'Missing parameters.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Missing parameters.', 'smartly-import-export' ) );
 	}
 
 	if ( ! post_type_exists( $post_type ) ) {
-		wp_send_json_error( esc_html__( 'Invalid post type.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid post type.', 'smartly-import-export' ) );
 	}
 
 	$batch_size = min( max( $batch_size, 1 ), 200 );
 
-	$data = get_transient( 'tsi_csv_data_' . $token );
+	$data = smie_get_import_data_transient( $token );
 	if ( ! $data ) {
-		wp_send_json_error( esc_html__( 'CSV data expired. Please re-upload the file.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'CSV data expired. Please re-upload the file.', 'smartly-import-export' ) );
 	}
 
 	$headers = $data['headers'];
@@ -136,10 +136,10 @@ function tsi_ajax_import_batch() {
 
 	$mapping = json_decode( $mapping, true );
 	if ( ! is_array( $mapping ) ) {
-		wp_send_json_error( esc_html__( 'Invalid mapping data.', 'the-simplest-importer' ) );
+		wp_send_json_error( esc_html__( 'Invalid mapping data.', 'smartly-import-export' ) );
 	}
 
-	$clean_map = tsi_sanitize_mapping( $mapping, count( $headers ) );
+	$clean_map = smie_sanitize_mapping( $mapping, count( $headers ) );
 
 	$transforms = json_decode( $transforms, true );
 	if ( ! is_array( $transforms ) ) {
@@ -209,7 +209,7 @@ function tsi_ajax_import_batch() {
 
 		/* Conditional row filtering — skip rows that don't match all rules */
 		if ( ! empty( $clean_filters ) ) {
-			$pass = tsi_row_matches_filters( $row, $clean_filters );
+			$pass = smie_row_matches_filters( $row, $clean_filters );
 
 			/**
 			 * Filter whether a row passes the import filter rules.
@@ -219,17 +219,17 @@ function tsi_ajax_import_batch() {
 			 * @param array $filters The filter rules.
 			 * @param int   $row_num Row number.
 			 */
-			$pass = apply_filters( 'tsi_import_row_filter', $pass, $row, $clean_filters, $row_num );
+			$pass = smie_apply_filters( 'smie_import_row_filter', $pass, $row, $clean_filters, $row_num );
 
 			if ( ! $pass ) {
 				$skipped++;
 				/* translators: %d: row number */
-				$log[] = sprintf( __( 'Row %d: Filtered — did not match filter rules.', 'the-simplest-importer' ), $row_num );
+				$log[] = sprintf( __( 'Row %d: Filtered — did not match filter rules.', 'smartly-import-export' ), $row_num );
 				continue;
 			}
 		}
 
-		$result  = tsi_import_single_row( $row, $row_num, $post_type, $clean_map, $dry_run, $dup_field, $dup_meta, $transforms, $headers, $import_mode );
+		$result  = smie_import_single_row( $row, $row_num, $post_type, $clean_map, $dry_run, $dup_field, $dup_meta, $transforms, $headers, $import_mode );
 
 		$log[] = $result['message'];
 		if ( ! empty( $result['post_id'] ) ) {
@@ -259,13 +259,13 @@ function tsi_ajax_import_batch() {
 	$done        = $next_offset >= $total;
 
 	if ( ! $dry_run && ( $inserted > 0 || $updated > 0 || $skipped > 0 || $errors > 0 || ! empty( $history_actions ) ) ) {
-		tsi_record_import_history( $history_id, $post_type, $import_mode, $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, $done );
+		smie_record_import_history( $history_id, $post_type, $import_mode, $inserted, $updated, $skipped, $errors, $post_ids, $history_actions, $done );
 	}
 
 	if ( $done ) {
 		/* Keep transient alive when there are failed rows for potential retry */
 		if ( empty( $failed_rows ) ) {
-			delete_transient( 'tsi_csv_data_' . $token );
+			smie_delete_import_data_transient( $token );
 		}
 
 		$completed_stats = array(
@@ -277,7 +277,7 @@ function tsi_ajax_import_batch() {
 		);
 
 		if ( ! $dry_run && $history_id ) {
-			$history = tsi_get_import_history();
+			$history = smie_get_import_history();
 			if ( isset( $history[ $history_id ] ) && is_array( $history[ $history_id ] ) ) {
 				$completed_stats['inserted'] = absint( $history[ $history_id ]['inserted'] );
 				$completed_stats['updated']  = absint( $history[ $history_id ]['updated'] );
@@ -293,7 +293,7 @@ function tsi_ajax_import_batch() {
 		 * @param string $post_type The imported post type.
 		 * @param array  $stats     { inserted, updated, skipped, errors, post_ids, dry_run, history_id }
 		 */
-		do_action( 'tsi_import_completed', $post_type, array(
+		smie_do_action( 'smie_import_completed', $post_type, array(
 			'inserted'   => $completed_stats['inserted'],
 			'updated'    => $completed_stats['updated'],
 			'skipped'    => $completed_stats['skipped'],
@@ -331,7 +331,7 @@ function tsi_ajax_import_batch() {
  * @param int   $col_max  Number of CSV columns (for bounds checking).
  * @return array Sanitized mapping.
  */
-function tsi_sanitize_mapping( $mapping, $col_max ) {
+function smie_sanitize_mapping( $mapping, $col_max ) {
 	$clean = array();
 
 	foreach ( $mapping as $field => $info ) {
@@ -382,7 +382,7 @@ function tsi_sanitize_mapping( $mapping, $col_max ) {
  * @param string $import_mode Import mode (insert, update, insert-update).
  * @return array { status: string, message: string, post_id: int, history_action?: array<string, mixed> }
  */
-function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run = false, $dup_field = '', $dup_meta = '', $transforms = array(), $headers = array(), $import_mode = 'insert-update' ) {
+function smie_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run = false, $dup_field = '', $dup_meta = '', $transforms = array(), $headers = array(), $import_mode = 'insert-update' ) {
 	$post_data    = array( 'post_type' => $post_type );
 	$meta_data    = array();
 	$tax_data     = array();
@@ -397,7 +397,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	 * @param string $post_type Target post type.
 	 * @param array  $mapping   Sanitized mapping array.
 	 */
-	do_action( 'tsi_before_import_row', $row, $row_num, $post_type, $mapping );
+	smie_do_action( 'smie_before_import_row', $row, $row_num, $post_type, $mapping );
 
 	foreach ( $mapping as $field => $info ) {
 		if ( 'custom' === $info['source'] ) {
@@ -415,7 +415,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 
 		/* Apply transform if set */
 		if ( ! empty( $transforms[ $field ] ) ) {
-			$value = tsi_apply_transform( $value, $transforms[ $field ] );
+			$value = smie_apply_transform( $value, $transforms[ $field ] );
 		}
 
 		if ( 'ID' === $field ) {
@@ -483,7 +483,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	 * @param array  $row       Original CSV row values.
 	 * @param int    $row_num   Row number in the CSV.
 	 */
-	$import_row_data = apply_filters( 'tsi_import_row_data', array(
+	$import_row_data = smie_apply_filters( 'smie_import_row_data', array(
 		'post_data'    => $post_data,
 		'meta_data'    => $meta_data,
 		'tax_data'     => $tax_data,
@@ -508,7 +508,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			'status'  => 'skipped',
 			'post_id' => 0,
 			/* translators: %d: row number */
-			'message' => sprintf( __( 'Row %d: Skipped — update mode requires a valid ID column.', 'the-simplest-importer' ), $row_num ),
+			'message' => sprintf( __( 'Row %d: Skipped — update mode requires a valid ID column.', 'smartly-import-export' ), $row_num ),
 		);
 	}
 
@@ -521,14 +521,14 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 				'status'  => 'skipped',
 				'post_id' => 0,
 				/* translators: 1: row number, 2: post ID */
-				'message' => sprintf( __( 'Row %1$d: Skipped — ID %2$d belongs to a different post type.', 'the-simplest-importer' ), $row_num, $post_data['ID'] ),
+				'message' => sprintf( __( 'Row %1$d: Skipped — ID %2$d belongs to a different post type.', 'smartly-import-export' ), $row_num, $post_data['ID'] ),
 			);
 		} elseif ( 'update' === $import_mode ) {
 			return array(
 				'status'  => 'skipped',
 				'post_id' => 0,
 				/* translators: 1: row number, 2: post ID */
-				'message' => sprintf( __( 'Row %1$d: Skipped — post ID %2$d was not found.', 'the-simplest-importer' ), $row_num, $post_data['ID'] ),
+				'message' => sprintf( __( 'Row %1$d: Skipped — post ID %2$d was not found.', 'smartly-import-export' ), $row_num, $post_data['ID'] ),
 			);
 		} else {
 			unset( $post_data['ID'] ); // ID not found; insert as new.
@@ -537,13 +537,13 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 
 	/* Duplicate detection (only for inserts) */
 	if ( ! $is_update && $dup_field ) {
-		$dup_found = tsi_check_duplicate( $post_type, $dup_field, $dup_meta, $post_data, $meta_data );
+		$dup_found = smie_check_duplicate( $post_type, $dup_field, $dup_meta, $post_data, $meta_data );
 		if ( $dup_found ) {
 			return array(
 				'status'  => 'skipped',
 				'post_id' => 0,
 				/* translators: 1: row number, 2: post ID */
-				'message' => sprintf( __( 'Row %1$d: Skipped — duplicate found (post #%2$d).', 'the-simplest-importer' ), $row_num, $dup_found ),
+				'message' => sprintf( __( 'Row %1$d: Skipped — duplicate found (post #%2$d).', 'smartly-import-export' ), $row_num, $dup_found ),
 			);
 		}
 	}
@@ -554,7 +554,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 
 	$history_action = array();
 	if ( ! $dry_run && $is_update ) {
-		$snapshot = tsi_capture_post_snapshot( absint( $post_data['ID'] ) );
+		$snapshot = smie_capture_post_snapshot( absint( $post_data['ID'] ) );
 		if ( ! empty( $snapshot ) ) {
 			$history_action = array(
 				'type'     => 'updated',
@@ -568,13 +568,13 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	if ( $dry_run ) {
 		$action_label = $is_update
 			/* translators: 1: row number, 2: post ID */
-			? sprintf( __( 'Row %1$d: Would update post #%2$d', 'the-simplest-importer' ), $row_num, $post_data['ID'] )
+			? sprintf( __( 'Row %1$d: Would update post #%2$d', 'smartly-import-export' ), $row_num, $post_data['ID'] )
 			/* translators: %d: row number */
-			: sprintf( __( 'Row %d: Would insert new post', 'the-simplest-importer' ), $row_num );
+			: sprintf( __( 'Row %d: Would insert new post', 'smartly-import-export' ), $row_num );
 		return array(
 			'status'  => $is_update ? 'updated' : 'inserted',
 			'post_id' => 0,
-			'message' => $action_label . ' [' . __( 'DRY RUN', 'the-simplest-importer' ) . ']',
+			'message' => $action_label . ' [' . __( 'DRY RUN', 'smartly-import-export' ) . ']',
 		);
 	}
 
@@ -587,7 +587,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			'status'  => 'error',
 			'post_id' => 0,
 			/* translators: 1: row number, 2: error message */
-			'message' => sprintf( __( 'Row %1$d: Error — %2$s', 'the-simplest-importer' ), $row_num, $result->get_error_message() ),
+			'message' => sprintf( __( 'Row %1$d: Error — %2$s', 'smartly-import-export' ), $row_num, $result->get_error_message() ),
 		);
 	}
 
@@ -646,11 +646,11 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	}
 
 	if ( $thumb_url ) {
-		tsi_set_featured_image( $post_id, $thumb_url );
+		smie_set_featured_image( $post_id, $thumb_url );
 	}
 
 	if ( $gallery_urls ) {
-		tsi_set_product_gallery( $post_id, $gallery_urls );
+		smie_set_product_gallery( $post_id, $gallery_urls );
 	}
 
 	/**
@@ -661,7 +661,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 	 * @param int    $row_num   Row number in the CSV.
 	 * @param bool   $is_update Whether this was an update.
 	 */
-	do_action( 'tsi_after_import_row', $post_id, $row, $row_num, $is_update );
+	smie_do_action( 'smie_after_import_row', $post_id, $row, $row_num, $is_update );
 
 	if ( $is_update ) {
 		return array(
@@ -669,7 +669,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			'post_id'        => $post_id,
 			'history_action' => $history_action,
 			/* translators: 1: row number, 2: post ID */
-			'message' => sprintf( __( 'Row %1$d: Updated post #%2$d', 'the-simplest-importer' ), $row_num, $post_id ),
+			'message' => sprintf( __( 'Row %1$d: Updated post #%2$d', 'smartly-import-export' ), $row_num, $post_id ),
 		);
 	}
 
@@ -681,7 +681,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
 			'post_id' => $post_id,
 		),
 		/* translators: 1: row number, 2: post ID */
-		'message' => sprintf( __( 'Row %1$d: Inserted new post #%2$d', 'the-simplest-importer' ), $row_num, $post_id ),
+		'message' => sprintf( __( 'Row %1$d: Inserted new post #%2$d', 'smartly-import-export' ), $row_num, $post_id ),
 	);
 }
 
@@ -696,7 +696,7 @@ function tsi_import_single_row( $row, $row_num, $post_type, $mapping, $dry_run =
  * @param string $url     The image URL.
  * @return void
  */
-function tsi_set_featured_image( $post_id, $url ) {
+function smie_set_featured_image( $post_id, $url ) {
 	require_once ABSPATH . 'wp-admin/includes/media.php';
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -734,7 +734,7 @@ function tsi_set_featured_image( $post_id, $url ) {
  * @param string $gallery_csv Comma-separated image URLs.
  * @return void
  */
-function tsi_set_product_gallery( $post_id, $gallery_csv ) {
+function smie_set_product_gallery( $post_id, $gallery_csv ) {
 	require_once ABSPATH . 'wp-admin/includes/media.php';
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -783,7 +783,7 @@ function tsi_set_product_gallery( $post_id, $gallery_csv ) {
  * @param string|array $transform The transform key (string) or array with 'transform' and 'param'.
  * @return string Transformed value.
  */
-function tsi_apply_transform( $value, $transform ) {
+function smie_apply_transform( $value, $transform ) {
 	$param = '';
 	if ( is_array( $transform ) ) {
 		$param     = isset( $transform['param'] ) ? $transform['param'] : '';
@@ -861,7 +861,7 @@ function tsi_apply_transform( $value, $transform ) {
  * @param array  $meta_data Meta data array being imported.
  * @return int Found post ID, or 0.
  */
-function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_data ) {
+function smie_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_data ) {
 	global $wpdb;
 
 	if ( 'post_title' === $field && ! empty( $post_data['post_title'] ) ) {
@@ -918,7 +918,7 @@ function tsi_check_duplicate( $post_type, $field, $meta_key, $post_data, $meta_d
  * @param array $filters Array of filter rules { col, op, value }.
  * @return bool True if the row matches all rules.
  */
-function tsi_row_matches_filters( $row, $filters ) {
+function smie_row_matches_filters( $row, $filters ) {
 	foreach ( $filters as $rule ) {
 		$cell = isset( $row[ $rule['col'] ] ) ? trim( (string) $row[ $rule['col'] ] ) : '';
 		$val  = $rule['value'];
