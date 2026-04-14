@@ -124,7 +124,7 @@ function smie_plugins_api_info( $result, $action, $args ) {
 			. '<li>' . esc_html__( 'Visit Plugins.', 'smartly-import-export' ) . '</li>'
 			. '<li>' . esc_html__( 'Activate the Smartly Import Export plugin.', 'smartly-import-export' ) . '</li>'
 			. '</ol>',
-		'changelog'    => '<h4>v1.4.2</h4>'
+		'changelog'    => '<h4>v1.4.3</h4>'
 			. '<ul>'
 			. '<li>' . esc_html__( 'Renamed the plugin to Smartly Import Export with the new smartly-import-export slug and smie_ prefix.', 'smartly-import-export' ) . '</li>'
 			. '<li>' . esc_html__( 'Moved the single-post export JavaScript into the proper enqueue flow.', 'smartly-import-export' ) . '</li>'

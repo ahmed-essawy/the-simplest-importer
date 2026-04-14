@@ -3,7 +3,7 @@ Contributors: ahm.elessawy
 Tags: csv, import, export, custom post type, bulk
 Requires at least: 6.3
 Tested up to: 7.0
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -118,7 +118,7 @@ The plugin processes 50 rows at a time (filterable via `smie_import_batch_size`)
 
 == Changelog ==
 
-= 1.4.2 =
+= 1.4.3 =
 * Changed: Renamed the plugin from The Simplest Importer to Smartly Import Export and updated the slug, text domain, and hook prefixes.
 * Changed: Moved the single-post export JavaScript out of PHP markup into a dedicated admin asset.
 * Changed: Replaced deprecated XML entity-loader handling with modern secure XML parsing.
@@ -204,7 +204,7 @@ The plugin processes 50 rows at a time (filterable via `smie_import_batch_size`)
 
 == Upgrade Notice ==
 
-= 1.4.2 =
+= 1.4.3 =
 Renames the plugin to Smartly Import Export, removes the remaining inline admin script, modernizes XML parsing, and preserves compatibility with existing `tsi_*` data and hooks.
 
 = 1.4.1 =

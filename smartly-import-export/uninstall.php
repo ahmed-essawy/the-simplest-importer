@@ -28,25 +28,25 @@ $wpdb->query(
 );
 
 /* Unschedule all cron events for scheduled imports */
-$import_schedule_sets = array(
+$smie_import_schedule_sets = array(
 	get_option( 'tsi_scheduled_imports', array() ),
 	get_option( 'smie_scheduled_imports', array() ),
 );
 
-foreach ( $import_schedule_sets as $schedules ) {
-	if ( ! is_array( $schedules ) ) {
+foreach ( $smie_import_schedule_sets as $smie_schedules ) {
+	if ( ! is_array( $smie_schedules ) ) {
 		continue;
 	}
 
-	foreach ( $schedules as $id => $schedule ) {
-		$timestamp = wp_next_scheduled( 'tsi_scheduled_import', array( $id ) );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'tsi_scheduled_import', array( $id ) );
+	foreach ( $smie_schedules as $smie_id => $smie_schedule ) {
+		$smie_timestamp = wp_next_scheduled( 'tsi_scheduled_import', array( $smie_id ) );
+		if ( $smie_timestamp ) {
+			wp_unschedule_event( $smie_timestamp, 'tsi_scheduled_import', array( $smie_id ) );
 		}
 
-		$timestamp = wp_next_scheduled( 'smie_scheduled_import', array( $id ) );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'smie_scheduled_import', array( $id ) );
+		$smie_timestamp = wp_next_scheduled( 'smie_scheduled_import', array( $smie_id ) );
+		if ( $smie_timestamp ) {
+			wp_unschedule_event( $smie_timestamp, 'smie_scheduled_import', array( $smie_id ) );
 		}
 	}
 }
@@ -70,25 +70,25 @@ delete_option( 'smie_mapping_profiles' );
 delete_option( 'smie_scheduled_imports' );
 
 /* Unschedule all cron events for scheduled exports */
-$export_schedule_sets = array(
+$smie_export_schedule_sets = array(
 	get_option( 'tsi_scheduled_exports', array() ),
 	get_option( 'smie_scheduled_exports', array() ),
 );
 
-foreach ( $export_schedule_sets as $export_schedules ) {
-	if ( ! is_array( $export_schedules ) ) {
+foreach ( $smie_export_schedule_sets as $smie_export_schedules ) {
+	if ( ! is_array( $smie_export_schedules ) ) {
 		continue;
 	}
 
-	foreach ( $export_schedules as $id => $schedule ) {
-		$timestamp = wp_next_scheduled( 'tsi_scheduled_export', array( $id ) );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'tsi_scheduled_export', array( $id ) );
+	foreach ( $smie_export_schedules as $smie_id => $smie_schedule ) {
+		$smie_timestamp = wp_next_scheduled( 'tsi_scheduled_export', array( $smie_id ) );
+		if ( $smie_timestamp ) {
+			wp_unschedule_event( $smie_timestamp, 'tsi_scheduled_export', array( $smie_id ) );
 		}
 
-		$timestamp = wp_next_scheduled( 'smie_scheduled_export', array( $id ) );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'smie_scheduled_export', array( $id ) );
+		$smie_timestamp = wp_next_scheduled( 'smie_scheduled_export', array( $smie_id ) );
+		if ( $smie_timestamp ) {
+			wp_unschedule_event( $smie_timestamp, 'smie_scheduled_export', array( $smie_id ) );
 		}
 	}
 }

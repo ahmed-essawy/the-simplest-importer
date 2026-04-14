@@ -3,7 +3,7 @@
  * Plugin Name:       Smartly Import Export
  * Plugin URI:        https://github.com/ahmed-essawy/smartly-import-export
  * Description:       Import, export, and manage posts and custom post types via CSV, JSON, and XML with visual column mapping and batch processing.
- * Version:           1.4.2
+ * Version:           1.4.3
  * Requires at least: 6.3
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SMIE_VERSION', '1.4.2' );
+define( 'SMIE_VERSION', '1.4.3' );
 define( 'SMIE_PLUGIN_FILE', __FILE__ );
 define( 'SMIE_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'SMIE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -140,6 +140,16 @@ function smie_delete_import_data_transient( $token ) {
 }
 
 /**
+ * Check whether a custom hook name uses the current or legacy plugin prefix.
+ *
+ * @param string $smie_hook_name Hook name to validate.
+ * @return bool
+ */
+function smie_is_prefixed_hook_name( $smie_hook_name ) {
+	return 0 === strpos( $smie_hook_name, 'smie_' ) || 0 === strpos( $smie_hook_name, 'tsi_' );
+}
+
+/**
  * Apply both legacy and current filters for compatibility.
  *
  * @param string $hook_name Filter name.
@@ -148,13 +158,17 @@ function smie_delete_import_data_transient( $token ) {
  * @return mixed
  */
 function smie_apply_filters( $hook_name, $value, ...$args ) {
+	if ( ! smie_is_prefixed_hook_name( $hook_name ) ) {
+		return $value;
+	}
+
 	$legacy_hook = 0 === strpos( $hook_name, 'smie_' ) ? 'tsi_' . substr( $hook_name, 5 ) : '';
 
 	if ( '' !== $legacy_hook && has_filter( $legacy_hook ) ) {
-		$value = apply_filters( $legacy_hook, $value, ...$args );
+		$value = apply_filters( $legacy_hook, $value, ...$args ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Wrapper only forwards validated legacy plugin hooks.
 	}
 
-	return apply_filters( $hook_name, $value, ...$args );
+	return apply_filters( $hook_name, $value, ...$args ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Wrapper only forwards validated plugin hooks.
 }
 
 /**
@@ -165,11 +179,15 @@ function smie_apply_filters( $hook_name, $value, ...$args ) {
  * @return void
  */
 function smie_do_action( $hook_name, ...$args ) {
-	do_action( $hook_name, ...$args );
+	if ( ! smie_is_prefixed_hook_name( $hook_name ) ) {
+		return;
+	}
+
+	do_action( $hook_name, ...$args ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Wrapper only forwards validated plugin hooks.
 
 	$legacy_hook = 0 === strpos( $hook_name, 'smie_' ) ? 'tsi_' . substr( $hook_name, 5 ) : '';
 	if ( '' !== $legacy_hook && has_action( $legacy_hook ) ) {
-		do_action( $legacy_hook, ...$args );
+		do_action( $legacy_hook, ...$args ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Wrapper only forwards validated legacy plugin hooks.
 	}
 }
 
